@@ -1,24 +1,32 @@
-ghci> parseQuantity "45"
-Right (45,"")
-ghci> parseQuantity "45awd"
-Right (45,"awd")
-ghci> parseQuantity ""
-Left "empty input, cannot parse a number"
-ghci> parseQuantity "abd"
-Left "not a number"
-ghci> parseQuantity "asd45"
-Left "not a number"
+Welcome! [TAB] for auto completion.
+>>> add corporateCEOTM 100.79eur (contains: 25 tile, 1 gameBoard)
+New products added to the state.
+>>> view
+State: Current State:
+Products:
+BoardGame "corporateCEOTM" 100.79 [Component 25 "tile",Component 1 "gameBoard"]
+Discounts:
+Purchase History:
 
-ghci> parseDiscount "20%"
-Right (20,"")
-ghci> parseDiscount "100%dar"
-Right (100,"dar")
-ghci> parseDiscount "10.0%"
-Left "% is not found in .0%"
-ghci> parseDiscount "%"
-Left "not a number"
-ghci> parseDiscount "10"
-Left "Cannot find % in an empty input"
-ghci> parseDiscount ""
-Left "empty input, cannot parse a number"
+>>> add bigBoxTM 150eur (contains: 2 tile, 1 gameBoard, 5 marker) [includes: playerBoard 10eur, metalResource 20eur]
+New products added to the state.
+>>> view
+State: Current State:
+Products:
+BoardGame "corporateCEOTM" 100.79 [Component 25 "tile",Component 1 "gameBoard"]
+BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0]
+Discounts:
+Purchase History:
 
+>>> add turmoilTMexp 200.50eur (contains: 3 tile, 2 gameBoard, 10 marker) [includes: miniature 15eur, spaceInsert 25eur]
+New products added to the state.
+>>> view
+State: Current State:
+Products:
+BoardGame "corporateCEOTM" 100.79 [Component 25 "tile",Component 1 "gameBoard"]
+BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0]
+BoardGameWithAddOns "turmoilTMexp" 200.5 [Component 3 "tile",Component 2 "gameBoard",Component 10 "marker"] [AddOn "miniature" 15.0,AddOn "spaceInsert" 25.0]
+Discounts:
+Purchase History:
+
+>>> 

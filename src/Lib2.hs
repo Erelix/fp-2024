@@ -393,7 +393,6 @@ emptyState = State
       purchaseHistory = []
     }
 
-
 viewState :: State -> String
 viewState (State products discounts purchaseHistory) =
   "Current State:\n"
@@ -405,7 +404,11 @@ viewState (State products discounts purchaseHistory) =
     ++ unlines (map (\(p, q) -> show q ++ " units of " ++ show p) purchaseHistory)
 
 
--- | Updates a state according to a query. This allows your program to share the state between repl iterations.
+-- | Updates a state according to a query.
+-- This allows your program to share the state
+-- between repl iterations.
+-- Right contains an optional message to print and
+-- an updated program's state.
 stateTransition :: State -> Query -> Either String (Maybe String, State)
 stateTransition state query = case query of
   AddCommand newProducts ->
