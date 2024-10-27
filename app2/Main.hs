@@ -22,7 +22,7 @@ final = do
   return Exit
 
 ini :: Repl ()
-ini = liftIO $ putStrLn "Welcome! Press [TAB] for auto completion."
+ini = liftIO $ putStrLn "Welcome! [TAB] for auto completion."
 
 completer :: (Monad m) => WordCompleter m
 completer n =
