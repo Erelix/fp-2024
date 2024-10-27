@@ -357,10 +357,9 @@ instance Show Query where
 -- The function must have tests.
 -- parseQuery :: String -> Either String Query
 -- parseQuery _ = Left "Not implemented 2"
-{-
 parseQuery :: String -> Either String Query
-parseQuery s =
-    case orX
+parseQuery s = 
+  case orX 
         [ parseRoundCommand
         , parseCheckShippingCommand
         , parseAddCommand
@@ -369,9 +368,9 @@ parseQuery s =
         , parseCompareCommand
         , parseViewCommand
         ] s of
-            Left e -> Left e
-            Right (q, _) -> Right q
--}         
+    Right (query, _) -> Right query
+    Left e -> Left "Error: command doesn't match anything from query."
+   
 
 type PurchaseHistory = [(Product, Integer)]
 
@@ -435,23 +434,3 @@ stateTransition state query = case query of
 
   ViewCommand ->
     Right (Just $ "State: " ++ viewState state, state)
-
-
-parseQuery :: String -> Either String Query
-parseQuery input = 
-  case parseAddCommand input of
-    Right (query, _) -> Right query
-    Left _ -> case parseRoundCommand input of
-      Right (query, _) -> Right query
-      Left _ -> case parseCheckShippingCommand input of
-        Right (query, _) -> Right query
-        Left _ -> case parseGiveDiscountCommand input of
-          Right (query, _) -> Right query
-          Left _ -> case parseBuyCommand input of
-            Right (query, _) -> Right query
-            Left _ -> case parseCompareCommand input of
-              Right (query, _) -> Right query
-              Left _ -> case parseViewCommand input of
-                Right (query, _) -> Right query
-                Left _ -> Left "Error: command doesn't match anything from query."
-
