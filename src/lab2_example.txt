@@ -1,32 +1,122 @@
 Welcome! [TAB] for auto completion.
->>> add corporateCEOTM 100.79eur (contains: 25 tile, 1 gameBoard)
+>>> view
+State: Current State:
+Products:
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+Discounts:
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
+Purchase History:
+
+>>> add 5 marker
 New products added to the state.
 >>> view
 State: Current State:
 Products:
-BoardGame "corporateCEOTM" 100.79 [Component 25 "tile",Component 1 "gameBoard"]
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  Component 5 "marker"
 Discounts:
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
 Purchase History:
 
->>> add bigBoxTM 150eur (contains: 2 tile, 1 gameBoard, 5 marker) [includes: playerBoard 10eur, metalResource 20eur]
+>>> add baseTM 80eur (contains: 3 card, 5 marker) [includes: playerBoard 15eur, metalResource 20eur]
 New products added to the state.
 >>> view
 State: Current State:
 Products:
-BoardGame "corporateCEOTM" 100.79 [Component 25 "tile",Component 1 "gameBoard"]
-BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0]
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  Component 5 "marker"
+4.  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0]
 Discounts:
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
 Purchase History:
 
->>> add turmoilTMexp 200.50eur (contains: 3 tile, 2 gameBoard, 10 marker) [includes: miniature 15eur, spaceInsert 25eur]
+>>> add corporateCEOTM 100eur (contains: 2 tile, 1 gameBoard) [includes: cardSleeve 5eur, miniature 10eur]
 New products added to the state.
 >>> view
 State: Current State:
 Products:
-BoardGame "corporateCEOTM" 100.79 [Component 25 "tile",Component 1 "gameBoard"]
-BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0]
-BoardGameWithAddOns "turmoilTMexp" 200.5 [Component 3 "tile",Component 2 "gameBoard",Component 10 "marker"] [AddOn "miniature" 15.0,AddOn "spaceInsert" 25.0]
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  Component 5 "marker"
+4.  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0]
+5.  BoardGameWithAddOns "corporateCEOTM" 100.0 [Component 2 "tile",Component 1 "gameBoard"] [AddOn "cardSleeve" 5.0,AddOn "miniature" 10.0]
 Discounts:
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
 Purchase History:
 
->>> 
+>>> giveDiscount 4 25%
+Discount applied to BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0].
+>>> view
+State: Current State:
+Products:
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  Component 5 "marker"
+4.  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0]
+5.  BoardGameWithAddOns "corporateCEOTM" 100.0 [Component 2 "tile",Component 1 "gameBoard"] [AddOn "cardSleeve" 5.0,AddOn "miniature" 10.0]
+Discounts:
+  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0] with 25% discount
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
+Purchase History:
+
+>>> giveDiscount baseTM 80eur (contains: 3 card, 5 marker) [includes: playerBoard 15eur, metalResource 20eur] 50%
+Discount applied to BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0].
+>>> view
+State: Current State:
+Products:
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  Component 5 "marker"
+4.  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0]
+5.  BoardGameWithAddOns "corporateCEOTM" 100.0 [Component 2 "tile",Component 1 "gameBoard"] [AddOn "cardSleeve" 5.0,AddOn "miniature" 10.0]
+Discounts:
+  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0] with 50% discount
+  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0] with 25% discount
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
+Purchase History:
+
+>>> buy 10 2
+Product bought and added to purchase history.
+>>> view
+State: Current State:
+Products:
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  Component 5 "marker"
+4.  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0]
+5.  BoardGameWithAddOns "corporateCEOTM" 100.0 [Component 2 "tile",Component 1 "gameBoard"] [AddOn "cardSleeve" 5.0,AddOn "miniature" 10.0]
+Discounts:
+  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0] with 50% discount
+  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0] with 25% discount
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
+Purchase History:
+  10 units of Right 2
+
+>>> buy 2 baseTM 80eur (contains: 3 card, 5 marker) [includes: playerBoard 15eur, metalResource 20eur]
+Product bought and added to purchase history.
+>>> view
+State: Current State:
+Products:
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  Component 5 "marker"
+4.  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0]
+5.  BoardGameWithAddOns "corporateCEOTM" 100.0 [Component 2 "tile",Component 1 "gameBoard"] [AddOn "cardSleeve" 5.0,AddOn "miniature" 10.0]
+Discounts:
+  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0] with 50% discount
+  BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0] with 25% discount
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
+Purchase History:
+  2 units of Left (BoardGameWithAddOns "baseTM" 80.0 [Component 3 "card",Component 5 "marker"] [AddOn "playerBoard" 15.0,AddOn "metalResource" 20.0])
+  10 units of Right 2

@@ -276,10 +276,11 @@ parseAddOn = and3' (\name _ price -> AddOn name price)
 data Query = RoundCommand Product
            | CheckShippingCommand Product
            | AddCommand [Product] 
-           | GiveDiscountCommand Product Integer  
-           | BuyCommand Integer Product
+           | GiveDiscountCommand (Either Product Int) Integer
+           | BuyCommand Integer (Either Product Int)
            | CompareCommand Product Product
            | ViewCommand
+
 
 -- <view_command> ::= "view"
 parseViewCommand :: Parser Query
@@ -305,21 +306,22 @@ parseAddCommand = and2' (\_ ps -> AddCommand ps)
                   (parseString "add ")
                   parseProducts
 
--- <discount_command> ::= "giveDiscount " <product> " " <discount>
+-- <discount_command> ::= "giveDiscount " <product_or_index> " " <discount>
 parseGiveDiscountCommand :: Parser Query
-parseGiveDiscountCommand = and4' (\_ p _ discount -> GiveDiscountCommand p discount)
-                          (parseString "giveDiscount ")
-                          parseProduct
-                          (parseChar ' ') 
-                          parseDiscount
+parseGiveDiscountCommand = and4'
+    (\_ productOrIndex _ discount -> GiveDiscountCommand productOrIndex discount)
+    (parseString "giveDiscount ")
+    parseProductOrIndex
+    (parseChar ' ')
+    parseDiscount
 
--- <buy_command> ::= "buy " <quantity> " " <product>
+-- <buy_command> ::= "buy " <quantity> " " <product_or_index>
 parseBuyCommand :: Parser Query
-parseBuyCommand = and4' (\_ quantity _ p -> BuyCommand quantity p)
+parseBuyCommand = and4' (\_ quantity _ productOrIndex -> BuyCommand quantity productOrIndex)
                           (parseString "buy ")
                           parseQuantity
                           (parseChar ' ') 
-                          parseProduct
+                          parseProductOrIndex
 
 -- <compare_command> ::= "compare " <product> " " <product>
 parseCompareCommand :: Parser Query
@@ -329,7 +331,27 @@ parseCompareCommand = and4' (\_ p1 _ p2 -> CompareCommand p1 p2)
                           (parseChar ' ') 
                           parseProduct
 
-                          
+-- <product_or_index> ::= <number> | <product>
+parseProductOrIndex :: Parser (Either Product Int)
+parseProductOrIndex = orX 
+    [ parseNumberAsIndex
+    , parseProductAsLeft
+    ]
+
+-- Helper parser to parse as an index
+parseNumberAsIndex :: Parser (Either Product Int)
+parseNumberAsIndex input = 
+    case parseNumber input of
+        Right (num, rest) -> Right (Right (fromInteger num), rest) -- Wrap as Right Int
+        Left err -> Left err
+
+-- Helper parser to parse as a product
+parseProductAsLeft :: Parser (Either Product Int)
+parseProductAsLeft input = 
+    case parseProduct input of
+        Right (product, rest) -> Right (Left product, rest) -- Wrap as Left Product
+        Left err -> Left err
+              
 -- | The instances are needed basically for tests
 --instance Eq Query where
 --  (==) _ _= False
@@ -355,8 +377,6 @@ instance Show Query where
 
 -- | Parses user's input.
 -- The function must have tests.
--- parseQuery :: String -> Either String Query
--- parseQuery _ = Left "Not implemented 2"
 parseQuery :: String -> Either String Query
 parseQuery s = 
   case orX 
@@ -370,9 +390,8 @@ parseQuery s =
         ] s of
     Right (query, _) -> Right query
     Left e -> Left "Error: command doesn't match anything from query."
-   
 
-type PurchaseHistory = [(Product, Integer)]
+type PurchaseHistory = [(Either Product Int, Integer)]
 
 -- | An entity which represents your program's state.
 -- Currently it has no constructors but you can introduce
@@ -384,12 +403,33 @@ data State = State
     , purchaseHistory :: PurchaseHistory
     } deriving (Eq, Show)
 
+
+presetProducts :: [Product]
+presetProducts =
+  [ BoardGame "corporateCEOTM" 50.0 []
+  , AddOn "cardSleeve" 5.0
+  ]
+
+presetDiscounts :: [(Product, Integer)]
+presetDiscounts =
+  [ (BoardGame "corporateCEOTM" 50.0 [], 10)  -- 10% discount
+  , (AddOn "cardSleeve" 5.0, 5)               -- 5% discount
+  ]
+
 -- | Creates an initial program's state.
 -- It is called once when the program starts.
-emptyState :: State
+{-emptyState :: State
 emptyState = State 
     { products = [],
       discounts = [],
+      purchaseHistory = []
+    }
+-}
+
+emptyState :: State
+emptyState = State 
+    { products = presetProducts,
+      discounts = presetDiscounts,
       purchaseHistory = []
     }
 
@@ -397,12 +437,11 @@ viewState :: State -> String
 viewState (State products discounts purchaseHistory) =
   "Current State:\n"
     ++ "Products:\n"
-    ++ unlines (map show products)
+    ++ unlines (zipWith (\i p -> show i ++ ".  " ++ show p) [1..] products)
     ++ "Discounts:\n"
-    ++ unlines (map (\(p, d) -> show p ++ " with " ++ show d ++ "% discount") discounts)
+    ++ unlines (map (\(p, d) -> "  " ++ show p ++ " with " ++ show d ++ "% discount") discounts)
     ++ "Purchase History:\n"
-    ++ unlines (map (\(p, q) -> show q ++ " units of " ++ show p) purchaseHistory)
-
+    ++ unlines (map (\(p, q) -> "  " ++ show q ++ " units of " ++ show p) purchaseHistory)
 
 -- | Updates a state according to a query.
 -- This allows your program to share the state
@@ -416,13 +455,19 @@ stateTransition state query = case query of
         newState = state { products = updatedProducts }
     in Right (Just "New products added to the state.", newState)
 
-  GiveDiscountCommand product discount ->
-    let updatedProducts = map (\p -> if p == product then product else p) (products state)
-        newState = state { products = updatedProducts }
-    in Right (Just "Discount applied to the product.", newState)
+  GiveDiscountCommand productIdentifier discount ->
+    let targetProduct = case productIdentifier of
+                          Left product -> Just product  -- Direct product
+                          Right index -> getProductByIndex (products state) index  -- Indexed product
+    in case targetProduct of
+        Just product -> 
+          let newDiscounts = (product, discount) : discounts state
+              newState = state { discounts = newDiscounts }
+          in Right (Just $ "Discount applied to " ++ show product ++ ".", newState)
+        Nothing -> Left "Error: Invalid product identifier provided."
 
-  BuyCommand quantity product ->
-    let newPurchaseHistory = (product, quantity) : purchaseHistory state
+  BuyCommand quantity productOrIndex ->
+    let newPurchaseHistory = (productOrIndex, quantity) : purchaseHistory state
         newState = state { purchaseHistory = newPurchaseHistory }
     in Right (Just "Product bought and added to purchase history.", newState)
 
@@ -437,3 +482,8 @@ stateTransition state query = case query of
 
   ViewCommand ->
     Right (Just $ "State: " ++ viewState state, state)
+
+getProductByIndex :: [Product] -> Int -> Maybe Product
+getProductByIndex products index
+  | index > 0 && index <= length products = Just (products !! (index - 1))
+  | otherwise = Nothing

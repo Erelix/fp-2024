@@ -4,12 +4,13 @@
 
 <add_command> ::= "add " <product> | "add " <products>
 
-<discount_command> ::= "giveDiscount " <product> " " <discount>
+<discount_command> ::= "giveDiscount " <product_or_index> " " <discount>
 
-<buy_command> ::= "buy " <quantity> " " <product>
+<buy_command> ::= "buy " <quantity> " " <product_or_index>
 
 <compare_command> ::= "compare " <product> " " <product>
 
+<product_or_index> ::= <number> | <product>
 
 <products> ::= <product> | <product> ", " <products>
 <product> ::= <boardgame_with_addons> | <boardgame> | <add_on> | <component>
