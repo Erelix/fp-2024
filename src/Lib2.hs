@@ -35,6 +35,12 @@ data Product = BoardGame String Double [Product]
              deriving (Eq, Show)
 
 -- OR & ANDs
+and1' :: (a -> b) -> Parser a -> Parser b
+and1' f parser = \input ->
+    case parser input of
+        Right (v, rest) -> Right (f v, rest)
+        Left err -> Left err
+
 and2' :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
 and2' c a b = \input ->
     case a input of
@@ -132,8 +138,8 @@ parseNumber str =
     in
         case digits of
             [] -> Left "Not a number"
-            _ -> Right (read digits, rest)
-
+            _ -> Right (read digits, rest) -- read converts into integer
+            
 parseChar :: Char -> Parser Char
 parseChar c [] = Left ("Cannot find " ++ "'" ++ [c] ++ "'")
 parseChar c s@(h:t) = if c == h 
@@ -280,6 +286,7 @@ data Query = RoundCommand Product
            | BuyCommand Integer (Either Product Int)
            | CompareCommand Product Product
            | ViewCommand
+           | BlackFridayCommand
 
 
 -- <view_command> ::= "view"
@@ -330,6 +337,11 @@ parseCompareCommand = and4' (\_ p1 _ p2 -> CompareCommand p1 p2)
                           parseProduct
                           (parseChar ' ') 
                           parseProduct
+
+-- <black_friday_command> ::= "blackFriday"
+parseBlackFridayCommand :: Parser Query
+parseBlackFridayCommand = and1' (const BlackFridayCommand) 
+                                (parseString "blackFriday")
 
 -- <product_or_index> ::= <number> | <product>
 parseProductOrIndex :: Parser (Either Product Int)
@@ -387,6 +399,7 @@ parseQuery s =
         , parseBuyCommand
         , parseCompareCommand
         , parseViewCommand
+        , parseBlackFridayCommand
         ] s of
     Right (query, _) -> Right query
     Left e -> Left "Error: command doesn't match anything from query."
@@ -457,14 +470,19 @@ stateTransition state query = case query of
 
   GiveDiscountCommand productIdentifier discount ->
     let targetProduct = case productIdentifier of
-                          Left product -> Just product  -- Direct product
-                          Right index -> getProductByIndex (products state) index  -- Indexed product
+                          Left product -> Just product -- Direct product
+                          Right index -> getProductByIndex (products state) index -- Indexed product
     in case targetProduct of
         Just product -> 
-          let newDiscounts = (product, discount) : discounts state
-              newState = state { discounts = newDiscounts }
+          let updatedDiscounts = updateOrAddDiscount (discounts state) product discount
+              newState = state { discounts = updatedDiscounts }
           in Right (Just $ "Discount applied to " ++ show product ++ ".", newState)
         Nothing -> Left "Error: Invalid product identifier provided."
+
+  BlackFridayCommand ->
+    let blackFridayDiscounts = [(product, 50) | product <- products state] 
+        newState = state { discounts = blackFridayDiscounts }
+    in Right (Just "Black Friday started!!! All products now at half the price!", newState)
 
   BuyCommand quantity productOrIndex ->
     let newPurchaseHistory = (productOrIndex, quantity) : purchaseHistory state
@@ -487,3 +505,11 @@ getProductByIndex :: [Product] -> Int -> Maybe Product
 getProductByIndex products index
   | index > 0 && index <= length products = Just (products !! (index - 1))
   | otherwise = Nothing
+
+
+-- Helper function to add or update a discount in the discounts list
+updateOrAddDiscount :: [(Product, Integer)] -> Product -> Integer -> [(Product, Integer)]
+updateOrAddDiscount [] product discount = [(product, discount)]
+updateOrAddDiscount ((p, d) : xs) product discount
+  | p == product = (product, discount) : xs  -- Updates existing discount
+  | otherwise = (p, d) : updateOrAddDiscount xs product discount  -- Recur if not found
