@@ -284,7 +284,7 @@ data Query = RoundCommand Product
            | AddCommand [Product] 
            | GiveDiscountCommand (Either Product Int) Integer
            | BuyCommand Integer (Either Product Int)
-           | CompareCommand Product Product
+           | CompareCommand (Either Product Int) (Either Product Int)
            | ViewCommand
            | BlackFridayCommand
            | TotalCommand (Either Product Int)
@@ -336,13 +336,13 @@ parseTotalCommand = and2' (\_ productOrIndex -> TotalCommand productOrIndex)
                             (parseString "total ")
                             parseProductOrIndex
 
--- <compare_command> ::= "compare " <product> " " <product>
+-- <compare_command> ::= "compare " <product_or_index> " " <product_or_index>
 parseCompareCommand :: Parser Query
 parseCompareCommand = and4' (\_ p1 _ p2 -> CompareCommand p1 p2)
-                          (parseString "compare ")
-                          parseProduct
-                          (parseChar ' ') 
-                          parseProduct
+                        (parseString "compare ")
+                        parseProductOrIndex
+                        (parseChar ' ')
+                        parseProductOrIndex
 
 -- <black_friday_command> ::= "blackFriday"
 parseBlackFridayCommand :: Parser Query
@@ -390,7 +390,7 @@ instance Show Query where
     show (AddCommand ps) = "AddCommand " ++ show ps
     show (GiveDiscountCommand p d) = "GiveDiscountCommand " ++ show p ++ " " ++ show d
     show (BuyCommand q p) = "BuyCommand " ++ show q ++ " " ++ show p
-    show (CompareCommand p1 p2) = "CompareCommand " ++ show p1 ++ " " ++ show p2
+    show (CompareCommand p1 p2) = "CompareCommand " ++ showEitherProductInt p1 ++ " " ++ showEitherProductInt p2 
     show (TotalCommand p) = "TotalCommand " ++ showEitherProductInt p 
 
 showEitherProductInt :: Either Product Int -> String
@@ -436,8 +436,8 @@ presetProducts =
 
 presetDiscounts :: [(Product, Integer)]
 presetDiscounts =
-  [ (BoardGame "corporateCEOTM" 50.0 [], 10)  -- 10% discount
-  , (AddOn "cardSleeve" 5.0, 5)               -- 5% discount
+  [ (BoardGame "corporateCEOTM" 50.0 [], 10)
+  , (AddOn "cardSleeve" 5.0, 5)
   ]
 
 -- | Creates an initial program's state.
@@ -520,8 +520,18 @@ stateTransition state query = case query of
   CheckShippingCommand product ->
     Right (Just "Shipping cost calculated for the product.", state)
 
-  CompareCommand product1 product2 ->
-    Right (Just "Comparison between products done.", state)
+  CompareCommand productOrIndex1 productOrIndex2 ->
+    case (getProductFromEither (products state) productOrIndex1, 
+        getProductFromEither (products state) productOrIndex2) of
+    (Just product1, Just product2) ->
+        let total1 = calculateTotalWithinProduct product1 (discounts state)
+            total2 = calculateTotalWithinProduct product2 (discounts state)
+        in if total1 < total2
+            then Right (Just $ show product1 ++ " is cheaper than " ++ show product2 ++ " by " ++ show (total2 - total1) ++ " eur.", state)
+            else if total2 < total1
+                then Right (Just $ show product2 ++ " is cheaper than " ++ show product1 ++ " by " ++ show (total1 - total2) ++ " eur.", state)
+                else Right (Just $ "Both products have the same total price of " ++ show total1 ++ " eur.", state)
+    _ -> Left "Error: One or both invalid product or index provided"
 
   ViewCommand ->
     Right (Just $ "State: " ++ viewState state, state)
