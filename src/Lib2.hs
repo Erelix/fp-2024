@@ -280,7 +280,7 @@ parseAddOn = and3' (\name _ price -> AddOn name price)
 -- as many as needed.
 -- The Query type representing user commands
 data Query = RoundCommand Product
-           | CheckShippingCommand Product
+           | CheckShippingCommand (Either Product Int)
            | AddCommand [Product] 
            | GiveDiscountCommand (Either Product Int) Integer
            | BuyCommand Integer (Either Product Int)
@@ -301,11 +301,11 @@ parseRoundCommand = and2' (\_ p -> RoundCommand p)
                           (parseString "roundTo ")
                           parseProduct
 
--- <check_shipping_command> ::= "checkShipping " <product>
+-- <check_shipping_command> ::= "checkShipping " <product_or_index>
 parseCheckShippingCommand :: Parser Query
-parseCheckShippingCommand = and2' (\_ p -> CheckShippingCommand p)
+parseCheckShippingCommand = and2' (\_ productOrIndex -> CheckShippingCommand productOrIndex)
                           (parseString "checkShipping ")
-                          parseProduct
+                          parseProductOrIndex
 
 -- <add_command> ::= "add " <products>
 parseAddCommand :: Parser Query
@@ -517,8 +517,17 @@ stateTransition state query = case query of
   RoundCommand product ->
     Right (Just "Product price rounded.", state)
 
-  CheckShippingCommand product ->
-    Right (Just "Shipping cost calculated for the product.", state)
+  CheckShippingCommand productOrIndex ->
+    case getProductFromEither (products state) productOrIndex of
+        Just product ->
+            let total = calculateTotalWithinProduct product (discounts state)
+                shippingCost = if total >= 70.0 then 0.0 else 3.99
+                message = if shippingCost == 0.0
+                    then "Shipping is free for this product."
+                    else "Shipping cost for this product is 3.99 eur."
+            in Right (Just message, state)
+        Nothing ->
+            Left "Error: Invalid product or index provided."
 
   CompareCommand productOrIndex1 productOrIndex2 ->
     case (getProductFromEither (products state) productOrIndex1, 

@@ -1,6 +1,4 @@
-<round_command> ::= "roundTo " <product>
-
-<check_shipping_command> ::= "checkShipping " <product>
+<check_shipping_command> ::= "checkShipping " <product_or_index>
 
 <add_command> ::= "add " <product> | "add " <products>
 
@@ -10,7 +8,7 @@
 
 <total_command> ::= "total " <product_or_index>
 
-<compare_command> ::= "compare " <product> " " <product>
+<compare_command> ::= "compare " <product_or_index> " " <product_or_index>
 
 <black_friday_command> ::= "blackFriday"
 
