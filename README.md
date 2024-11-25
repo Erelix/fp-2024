@@ -134,6 +134,8 @@ ellas&hellasTMexp 8.1eur (contains: 0 rules)
      <boardgame> ::=  <boardgame_name> " " <price>  " (contains: " <products> ")"
      <boardgame_with_addons> ::= <boardgame> "[includes: " <products> "]"
 
+6. Added <total_command>
+
 #### NOTE:
    The changes to BNF were made because there either were mistakes or for clarity, simplicity purposes. The main logic hasn't been changed. The examples up above are still valid.
 

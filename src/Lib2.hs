@@ -481,8 +481,8 @@ stateTransition state query = case query of
 
   GiveDiscountCommand productIdentifier discount ->
     let targetProduct = case productIdentifier of
-                          Left product -> Just product -- Direct product
-                          Right index -> getProductByIndex (products state) index -- Indexed product
+                          Left product -> Just product
+                          Right index -> getProductByIndex (products state) index
     in case targetProduct of
         Just product -> 
           let updatedDiscounts = updateOrAddDiscount (discounts state) product discount
@@ -496,9 +496,15 @@ stateTransition state query = case query of
     in Right (Just "Black Friday started!!! All products now at half the price!", newState)
 
   BuyCommand quantity productOrIndex ->
-    let newPurchaseHistory = (productOrIndex, quantity) : purchaseHistory state
-        newState = state { purchaseHistory = newPurchaseHistory }
-    in Right (Just "Product bought and added to purchase history.", newState)
+    case getProductFromEither (products state) productOrIndex of
+        Just product ->
+            let unitPrice = calculateTotalWithinProduct product (discounts state)
+                totalPrice = fromIntegral quantity * unitPrice
+                newPurchaseHistory = (productOrIndex, quantity) : purchaseHistory state
+                newState = state { purchaseHistory = newPurchaseHistory }
+            in Right (Just ("Product bought for " ++ show totalPrice ++ " eur and added to purchase history."), newState)
+        Nothing ->
+            Left "Error: Invalid product or index provided."
 
   TotalCommand productOrIndex ->
     case getProductFromEither (products state) productOrIndex of
@@ -524,7 +530,6 @@ getProductByIndex :: [Product] -> Int -> Maybe Product
 getProductByIndex products index
   | index > 0 && index <= length products = Just (products !! (index - 1))
   | otherwise = Nothing
-
 
 -- Helper function to add or update a discount in the discounts list
 updateOrAddDiscount :: [(Product, Integer)] -> Product -> Integer -> [(Product, Integer)]

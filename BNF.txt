@@ -8,6 +8,8 @@
 
 <buy_command> ::= "buy " <quantity> " " <product_or_index>
 
+<total_command> ::= "total " <product_or_index>
+
 <compare_command> ::= "compare " <product> " " <product>
 
 <black_friday_command> ::= "blackFriday"
