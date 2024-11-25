@@ -287,7 +287,7 @@ data Query = RoundCommand Product
            | CompareCommand Product Product
            | ViewCommand
            | BlackFridayCommand
-
+           | TotalCommand (Either Product Int)
 
 -- <view_command> ::= "view"
 parseViewCommand :: Parser Query
@@ -329,6 +329,12 @@ parseBuyCommand = and4' (\_ quantity _ productOrIndex -> BuyCommand quantity pro
                           parseQuantity
                           (parseChar ' ') 
                           parseProductOrIndex
+
+-- <total_command> ::= "total " <product_or_index>
+parseTotalCommand :: Parser Query
+parseTotalCommand = and2' (\_ productOrIndex -> TotalCommand productOrIndex)
+                            (parseString "total ")
+                            parseProductOrIndex
 
 -- <compare_command> ::= "compare " <product> " " <product>
 parseCompareCommand :: Parser Query
@@ -385,7 +391,11 @@ instance Show Query where
     show (GiveDiscountCommand p d) = "GiveDiscountCommand " ++ show p ++ " " ++ show d
     show (BuyCommand q p) = "BuyCommand " ++ show q ++ " " ++ show p
     show (CompareCommand p1 p2) = "CompareCommand " ++ show p1 ++ " " ++ show p2
+    show (TotalCommand p) = "TotalCommand " ++ showEitherProductInt p 
 
+showEitherProductInt :: Either Product Int -> String
+showEitherProductInt (Left product) = "Product(" ++ show product ++ ")"
+showEitherProductInt (Right index) = "Index(" ++ show index ++ ")"
 
 -- | Parses user's input.
 -- The function must have tests.
@@ -400,6 +410,7 @@ parseQuery s =
         , parseCompareCommand
         , parseViewCommand
         , parseBlackFridayCommand
+        , parseTotalCommand 
         ] s of
     Right (query, _) -> Right query
     Left e -> Left "Error: command doesn't match anything from query."
@@ -489,6 +500,14 @@ stateTransition state query = case query of
         newState = state { purchaseHistory = newPurchaseHistory }
     in Right (Just "Product bought and added to purchase history.", newState)
 
+  TotalCommand productOrIndex ->
+    case getProductFromEither (products state) productOrIndex of
+        Just product ->
+            let total = calculateTotalWithinProduct product (discounts state)
+            in Right (Just $ "Total price of the product: " ++ show total ++ " eur.", state)
+        Nothing ->
+            Left "Error: Invalid product or index provided."
+
   RoundCommand product ->
     Right (Just "Product price rounded.", state)
 
@@ -513,3 +532,38 @@ updateOrAddDiscount [] product discount = [(product, discount)]
 updateOrAddDiscount ((p, d) : xs) product discount
   | p == product = (product, discount) : xs  -- Updates existing discount
   | otherwise = (p, d) : updateOrAddDiscount xs product discount  -- Recur if not found
+
+
+-- Function to calculate the total price within a product considering discounts
+calculateTotalWithinProduct :: Product -> [(Product, Integer)] -> Double
+calculateTotalWithinProduct product discounts = case product of
+    BoardGame _ price components ->
+        let discount = getDiscountForProduct product discounts
+            discountedPrice = applyDiscount price discount
+            componentsTotal = sum [calculateTotalWithinProduct c discounts | c <- components]
+        in discountedPrice + componentsTotal
+    
+    AddOn _ price ->
+        let discount = getDiscountForProduct product discounts
+        in applyDiscount price discount
+
+    Component _ _ -> 0.0  -- Components don't have a price
+
+    BoardGameWithAddOns _ price components addons ->
+        let discount = getDiscountForProduct product discounts
+            discountedPrice = applyDiscount price discount
+            componentsTotal = sum [calculateTotalWithinProduct c discounts | c <- components]
+            addonsTotal = sum [calculateTotalWithinProduct a discounts | a <- addons]
+        in discountedPrice + componentsTotal + addonsTotal
+
+getDiscountForProduct :: Product -> [(Product, Integer)] -> Integer
+getDiscountForProduct product discounts = case lookup product discounts of
+    Just discount -> discount
+    Nothing -> 0  -- No discount
+
+applyDiscount :: Double -> Integer -> Double
+applyDiscount price discountPercent = price * (1 - fromIntegral discountPercent / 100.0)
+
+getProductFromEither :: [Product] -> Either Product Int -> Maybe Product
+getProductFromEither _ (Left product) = Just product
+getProductFromEither products (Right index) = getProductByIndex products index
