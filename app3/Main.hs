@@ -38,12 +38,12 @@ completer n =
 cmd :: String -> Repl ()
 cmd str = do
   case Lib3.parseCommand str of
-    Left e -> liftIO $ putStrLn $ "PARSE ERROR:" ++ e
+    Left e -> liftIO $ putStrLn $ "PARSE ERROR: " ++ e
     Right (c, "") -> do
       (st, chan) <- lift get
       tr <- liftIO $ Lib3.stateTransition st c chan
       case tr of
-        Left e2 -> liftIO $ putStrLn $ "ERROR:" ++ e2
+        Left e2 -> liftIO $ putStrLn $ "ERROR: " ++ e2
         Right m -> mapM_ (liftIO . putStrLn) m
     Right (_, r) -> liftIO $ putStrLn $ "PARSE ERROR: string is not fully consumed - " ++ r
 

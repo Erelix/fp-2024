@@ -6,7 +6,8 @@ module Lib3
       parseCommand,
       parseStatements,
       marshallState,
-      renderStatements
+      renderStatements,
+      parseBatch,
     ) where
 
 import Control.Concurrent.Chan (Chan, readChan, writeChan, newChan)
