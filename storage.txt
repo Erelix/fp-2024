@@ -1,3 +1,5 @@
-add corporateCEOTM 50.0eur (contains: ), cardSleeve 5.0eur
-giveDiscount corporateCEOTM 50.0eur (contains: ) 10%
-giveDiscount cardSleeve 5.0eur 5%
+BEGIN
+add corporateCEOTM 50.0eur (contains: ), cardSleeve 5.0eur;
+giveDiscount corporateCEOTM 50.0eur (contains: ) 10%;
+giveDiscount cardSleeve 5.0eur 5%;
+END

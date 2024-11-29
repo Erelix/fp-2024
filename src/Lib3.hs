@@ -16,8 +16,9 @@ import System.IO (writeFile, readFile)
 import Control.Concurrent.STM (atomically, readTVar, writeTVar, TVar)
 import Control.Monad (foldM)
 import Data.Char (isSpace)
-import Data.List (intercalate)
+import Data.List (intercalate, isPrefixOf)
 import qualified Lib2
+import Data.Maybe (maybeToList)
 
 data StorageOp = Save String (Chan ()) | Load (Chan String)
 
@@ -57,16 +58,16 @@ parseCommand input =
         (cmdWord, rest) = break isSpace trimmedInput
         rest' = dropWhile isSpace rest
     in case cmdWord of
-        "load" -> 
+        "load" ->
             if null rest'
                 then Right (LoadCommand, "")
                 else Left "Load command does not take any arguments."
-        "save" -> 
+        "save" ->
             if null rest'
                 then Right (SaveCommand, "")
                 else Left "Save command does not take any arguments."
         _ -> case parseStatements input of
-                Right (stmts, rest'') -> 
+                Right (stmts, rest'') ->
                     if all isSpace rest''
                         then Right (StatementCommand stmts, "")
                         else Left "Extra input after valid statements."
@@ -76,29 +77,45 @@ parseCommand input =
 -- Must be used in parseCommand.
 -- Reuse Lib2 as much as you can.
 parseStatements :: String -> Either String (Statements, String)
-parseStatements input = 
-    case parseQueries input of
-        Right (queries, rest) ->
-            if null queries
-                then Left "No queries found."
-                else if length queries == 1
-                    then Right (Single (head queries), rest)
-                    else Right (Batch queries, rest)
-        Left err -> Left err
+parseStatements input =
+    let trimmedInput = dropWhile isSpace input
+    in if "BEGIN" `isPrefixOf` trimmedInput
+       then parseBatch (drop 5 trimmedInput)
+       else parseSingleStatement trimmedInput
 
-parseQueries :: String -> Either String ([Lib2.Query], String)
-parseQueries input = 
-    let parseMultipleQueries s acc =
-            case Lib2.parseQuery s of
-                Right ((query, rest)) -> 
-                    let rest' = dropWhile isSpace rest
-                    in parseMultipleQueries rest' (acc ++ [query])
-                Left _ -> Right (acc, s)
+-- | Parses a batch of queries delimited by BEGIN and END.
+parseBatch :: String -> Either String (Statements, String)
+parseBatch input =
+    let parseMultipleQueries :: String -> [Lib2.Query] -> Either String (Statements, String)
+        parseMultipleQueries s acc =
+            let trimmed = dropWhile isSpace s
+            in if "END" `isPrefixOf` trimmed
+               then Right (Batch acc, drop 3 trimmed)
+               else case Lib2.parseQuery trimmed of
+                    Right (query, rest) ->
+                        case stripSemicolon rest of
+                            Right next -> parseMultipleQueries next (acc ++ [query])
+                            Left e -> Left e
+                    Left e -> Left e
     in parseMultipleQueries input []
+
+stripSemicolon :: String -> Either String String
+stripSemicolon input =
+    let trimmed = dropWhile isSpace input
+    in if ";" `isPrefixOf` trimmed
+       then Right (drop 1 trimmed)
+       else Left "Expected ';' between queries."
+
+-- | Parses a single statement (non-batch).
+parseSingleStatement :: String -> Either String (Statements, String)
+parseSingleStatement input =
+    case Lib2.parseQuery input of
+        Right (query, rest) -> Right (Single query, rest)
+        Left err -> Left err
 
 -- | Converts program's state into Statements
 marshallState :: Lib2.State -> Statements
-marshallState state = 
+marshallState state =
     let queries = [Lib2.AddCommand (Lib2.products state)]
                 ++ map (\(prod, disc) -> Lib2.GiveDiscountCommand (Left prod) disc) (Lib2.discounts state)
                 ++ map (\(prodOrIndex, qty) -> Lib2.BuyCommand qty prodOrIndex) (Lib2.purchaseHistory state)
@@ -108,10 +125,10 @@ marshallState state =
 -- can be parsed back into Statements by parseStatements
 renderStatements :: Statements -> String
 renderStatements (Single query) = renderQuery query
-renderStatements (Batch queries) = unlines (map renderQuery queries)
+renderStatements (Batch queries) = "BEGIN\n" ++ unlines (map ((++ ";") . renderQuery) queries) ++ "END"
 
 renderQuery :: Lib2.Query -> String
-renderQuery query = 
+renderQuery query =
     case query of
         Lib2.AddCommand products -> "add " ++ renderProducts products
         Lib2.GiveDiscountCommand prodOrIndex discount ->
@@ -144,22 +161,30 @@ renderProdOrIndex (Right index) = show index
 stateTransition :: TVar Lib2.State -> Command -> Chan StorageOp ->
                    IO (Either String (Maybe String))
 stateTransition stateVar command ioChan = case command of
-    StatementCommand stmts -> case stmts of
+    StatementCommand stmts -> atomically $ case stmts of
         Single query -> do
-            state <- atomically $ readTVar stateVar
+            state <- readTVar stateVar
             case Lib2.stateTransition state query of
                 Right (msg, newState) -> do
-                    atomically $ writeTVar stateVar newState
+                    writeTVar stateVar newState
                     return $ Right msg
                 Left err -> return $ Left err
         Batch queries -> do
-            state <- atomically $ readTVar stateVar
-            let result = foldM (\s q -> Lib2.stateTransition s q >>= \(_, newState) -> Right newState) state queries
+            state <- readTVar stateVar
+            result <- foldM
+                (\prevResult q -> case prevResult of
+                    Left err -> return $ Left err
+                    Right (s, msgs) -> case Lib2.stateTransition s q of
+                        Right (msg, newState) -> return $ Right (newState, msgs ++ maybeToList msg)
+                        Left err -> return $ Left err
+                    )
+                (Right (state, [])) queries
             case result of
-                Right newState -> do
-                    atomically $ writeTVar stateVar newState
-                    return $ Right Nothing
+                Right (newState, msgs) -> do
+                    writeTVar stateVar newState
+                    return $ Right (Just (unlines msgs))
                 Left err -> return $ Left err
+
     SaveCommand -> do
         state <- atomically $ readTVar stateVar
         let stmts = marshallState state

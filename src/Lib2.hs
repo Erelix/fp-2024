@@ -419,12 +419,14 @@ data State = State
 
 presetProducts :: [Product]
 presetProducts =
-  [ 
+  [ BoardGame "corporateCEOTM" 50.0 []
+  , AddOn "cardSleeve" 5.0
   ]
 
 presetDiscounts :: [(Product, Integer)]
 presetDiscounts =
-  [ 
+  [ (BoardGame "corporateCEOTM" 50.0 [], 10)
+  , (AddOn "cardSleeve" 5.0, 5)
   ]
 
 -- | Creates an initial program's state.
