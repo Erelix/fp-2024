@@ -7,7 +7,7 @@ module Lib1
 
 completions :: [String]
 completions = [
-    , "total"
+      "total"
     , "checkShipping"
     , "add"
     , "giveDiscount"

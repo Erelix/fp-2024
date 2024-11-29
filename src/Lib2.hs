@@ -7,7 +7,6 @@ module Lib2
       parseProduct,
       parseProducts,
       parseComponent,
-      parseRoundCommand,
       parseAddOnName,
       parseBoardGameName,
       parseComponentName,
@@ -279,8 +278,7 @@ parseAddOn = and3' (\name _ price -> AddOn name price)
 -- Currently it has no constructors but you can introduce
 -- as many as needed.
 -- The Query type representing user commands
-data Query = RoundCommand Product
-           | CheckShippingCommand (Either Product Int)
+data Query = CheckShippingCommand (Either Product Int)
            | AddCommand [Product] 
            | GiveDiscountCommand (Either Product Int) Integer
            | BuyCommand Integer (Either Product Int)
@@ -294,12 +292,6 @@ parseViewCommand :: Parser Query
 parseViewCommand input = case parseString "view" input of
     Right (_, rest) -> Right (ViewCommand, rest)
     Left err -> Left err
-
--- <round_command> ::= "roundTo " <product>
-parseRoundCommand :: Parser Query
-parseRoundCommand = and2' (\_ p -> RoundCommand p)
-                          (parseString "roundTo ")
-                          parseProduct
 
 -- <check_shipping_command> ::= "checkShipping " <product_or_index>
 parseCheckShippingCommand :: Parser Query
@@ -374,7 +366,6 @@ parseProductAsLeft input =
 --instance Eq Query where
 --  (==) _ _= False
 instance Eq Query where
-    (RoundCommand p1) == (RoundCommand p2) = p1 == p2
     (CheckShippingCommand p1) == (CheckShippingCommand p2) = p1 == p2
     (AddCommand ps1) == (AddCommand ps2) = ps1 == ps2
     (GiveDiscountCommand p1 d1) == (GiveDiscountCommand p2 d2) = p1 == p2 && d1 == d2
@@ -385,7 +376,6 @@ instance Eq Query where
 --instance Show Query where
 --  show _ = ""
 instance Show Query where
-    show (RoundCommand p) = "RoundCommand " ++ show p
     show (CheckShippingCommand p) = "CheckShippingCommand " ++ show p
     show (AddCommand ps) = "AddCommand " ++ show ps
     show (GiveDiscountCommand p d) = "GiveDiscountCommand " ++ show p ++ " " ++ show d
@@ -399,21 +389,20 @@ showEitherProductInt (Right index) = "Index(" ++ show index ++ ")"
 
 -- | Parses user's input.
 -- The function must have tests.
-parseQuery :: String -> Either String Query
+-- Adjusted parseQuery function
+parseQuery :: String -> Either String (Query, String)
 parseQuery s = 
-  case orX 
-        [ parseRoundCommand
-        , parseCheckShippingCommand
-        , parseAddCommand
-        , parseGiveDiscountCommand
-        , parseBuyCommand
-        , parseCompareCommand
-        , parseViewCommand
-        , parseBlackFridayCommand
-        , parseTotalCommand 
-        ] s of
-    Right (query, _) -> Right query
-    Left e -> Left "Error: command doesn't match anything from query."
+  orX 
+    [ parseCheckShippingCommand
+    , parseAddCommand
+    , parseGiveDiscountCommand
+    , parseBuyCommand
+    , parseCompareCommand
+    , parseViewCommand
+    , parseBlackFridayCommand
+    , parseTotalCommand 
+    ] s
+
 
 type PurchaseHistory = [(Either Product Int, Integer)]
 
@@ -430,14 +419,12 @@ data State = State
 
 presetProducts :: [Product]
 presetProducts =
-  [ BoardGame "corporateCEOTM" 50.0 []
-  , AddOn "cardSleeve" 5.0
+  [ 
   ]
 
 presetDiscounts :: [(Product, Integer)]
 presetDiscounts =
-  [ (BoardGame "corporateCEOTM" 50.0 [], 10)
-  , (AddOn "cardSleeve" 5.0, 5)
+  [ 
   ]
 
 -- | Creates an initial program's state.
@@ -513,9 +500,6 @@ stateTransition state query = case query of
             in Right (Just $ "Total price of the product: " ++ show total ++ " eur.", state)
         Nothing ->
             Left "Error: Invalid product or index provided."
-
-  RoundCommand product ->
-    Right (Just "Product price rounded.", state)
 
   CheckShippingCommand productOrIndex ->
     case getProductFromEither (products state) productOrIndex of
