@@ -183,8 +183,13 @@ Product bought for 169.98299999999998 eur and added to purchase history.
 ### Changes to Lib2:
 
 1. Made <check_shipping_command>, <total_command>, <compare_command> functional
+
 2. Improved <buy_command> so that it displays for how much product has been bought.
+
 3. Removed <round_command> as it was never used and will never be used.
-4. Added parseDouble as there where problems in Property tests comparing Doubles - rounding up is random.
-5. Added "instance Eq Product where" because there where problems comparing products in Property tests. Now they are compared by name.
-6. Changed parseProductOrIndex to first do parseProductAsLeft then parseNumberAsIndex because there were problems with add command when adding component. quantinty was classified as index. (Problem found by property tests)
+
+4. Added parseDouble as there were problems in Property tests comparing Doubles - rounding up is random.
+
+5. Added "instance Eq Product where" because there were problems comparing products in Property tests. Now they are compared by name.
+
+6. Changed parseProductOrIndex to first do parseProductAsLeft then parseNumberAsIndex because there were problems with add command when adding component. Quantinty was classified as index. (Problem found by property tests)
