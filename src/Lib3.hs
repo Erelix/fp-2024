@@ -24,6 +24,8 @@ import Data.List (intercalate, isPrefixOf)
 import GHC.Generics (Generic)
 import qualified Lib2
 import Data.Maybe (maybeToList)
+import Numeric (showFFloat)
+
 
 data StorageOp = Save String (Chan ()) | Load (Chan String)
 
@@ -163,13 +165,17 @@ renderQuery query =
 renderProducts :: [Lib2.Product] -> String
 renderProducts = intercalate ", " . map renderProduct
 
+formatPrice :: Double -> String
+formatPrice price = showFFloat Nothing price ""
+
 renderProduct :: Lib2.Product -> String
 renderProduct (Lib2.BoardGame name price components) =
-    name ++ " " ++ show price ++ "eur (contains: " ++ renderProducts components ++ ")"
-renderProduct (Lib2.AddOn name price) = name ++ " " ++ show price ++ "eur"
+    name ++ " " ++ formatPrice price ++ "eur (contains: " ++ renderProducts components ++ ")"
+renderProduct (Lib2.AddOn name price) = name ++ " " ++ formatPrice price ++ "eur"
 renderProduct (Lib2.Component qty name) = show qty ++ " " ++ name
 renderProduct (Lib2.BoardGameWithAddOns name price components addons) =
     renderProduct (Lib2.BoardGame name price components) ++ " [includes: " ++ renderProducts addons ++ "]"
+
 
 renderProdOrIndex :: Either Lib2.Product Int -> String
 renderProdOrIndex (Left product) = renderProduct product

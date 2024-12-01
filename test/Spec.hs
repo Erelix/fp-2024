@@ -15,6 +15,7 @@ import Lib2 qualified
 import Lib3 qualified
 import GHC.Generics (Generic)
 
+
 arbitraryPositiveDouble :: Gen Double
 arbitraryPositiveDouble = do
     n <- choose (1, 100000) :: Gen Integer
@@ -27,7 +28,10 @@ arbitraryPositiveInt :: Gen Int
 arbitraryPositiveInt = choose (1, 100)
 
 arbitraryProdOrIndex :: Gen (Either Lib2.Product Int)
-arbitraryProdOrIndex = oneof [Left <$> arbitrary, Right <$> arbitraryPositiveInt]
+arbitraryProdOrIndex = oneof 
+    [ Left <$> resize 3 arbitrary,
+      Right <$> arbitraryPositiveInt
+    ]
 
 addOnNames :: [String]
 addOnNames = ["playerBoard", "miniature", "metalResource", "cardSleeve", "spaceInsert"]
@@ -37,9 +41,6 @@ boardGameNames = ["corporateCEOTM", "baseTM", "bigBoxTM", "venusTMexp", "turmoil
 
 componentNames :: [String]
 componentNames = ["tile", "card", "marker", "gameBoard", "playerBoard"]
-
-
--- **1. Define Arbitrary Instances at the Top Level**
 
 instance Arbitrary Lib2.Product where
     arbitrary :: Gen Lib2.Product
@@ -58,39 +59,14 @@ instance Arbitrary Lib2.Product where
             qty <- arbitraryPositiveInteger
             name <- elements componentNames
             return $ Lib2.Component qty name
-{--
-    shrink = shrinkProduct
 
-shrinkProduct :: Lib2.Product -> [Lib2.Product]
-shrinkProduct (Lib2.BoardGame name price components) =
-    [Lib2.BoardGame name' price components | name' <- shrinkNonEmpty name] ++
-    [Lib2.BoardGame name price' components | price' <- shrinkPositiveDouble price] ++
-    [Lib2.BoardGame name price components' | components' <- shrink components]
-shrinkProduct (Lib2.AddOn name price) =
-    [Lib2.AddOn name' price | name' <- shrinkNonEmpty name] ++
-    [Lib2.AddOn name price' | price' <- shrinkPositiveDouble price]
-shrinkProduct (Lib2.Component qty name) =
-    [Lib2.Component qty' name | qty' <- shrinkPositiveInteger qty] ++
-    [Lib2.Component qty name' | name' <- shrinkNonEmpty name]
-shrinkProduct _ = []
-
-shrinkNonEmpty :: String -> [String]
-shrinkNonEmpty s = filter (not . null) (shrink s)
-
-shrinkPositiveDouble :: Double -> [Double]
-shrinkPositiveDouble x = filter (> 0) (shrink x)
-
-shrinkPositiveInteger :: Integer -> [Integer]
-shrinkPositiveInteger x = filter (> 0) (shrink x)
---}
 instance Arbitrary Lib2.Query where
     arbitrary :: Gen Lib2.Query
     arbitrary = oneof
         [ arbitraryAddCommand
-        --, arbitraryGiveDiscountCommand
+        , arbitraryGiveDiscountCommand
         , arbitraryBuyCommand
         , return Lib2.ViewCommand
-        --, return Lib2.BlackFridayCommand
         , arbitraryTotalCommand
         , arbitraryCheckShippingCommand
         , arbitraryCompareCommand
@@ -117,36 +93,57 @@ instance Arbitrary Lib2.Query where
             p1 <- arbitraryProdOrIndex
             p2 <- arbitraryProdOrIndex
             return $ Lib2.CompareCommand p1 p2
-{--
-    shrink = shrinkQuery
 
-shrinkQuery :: Lib2.Query -> [Lib2.Query]
-shrinkQuery (Lib2.AddCommand products) =
-    [Lib2.AddCommand products' | products' <- shrink products, not (null products')]
-shrinkQuery (Lib2.GiveDiscountCommand prodOrIndex discount) =
-    [Lib2.GiveDiscountCommand prodOrIndex discount' | discount' <- filter (>= 0) (shrink discount)]
-shrinkQuery (Lib2.BuyCommand qty prodOrIndex) =
-    [Lib2.BuyCommand qty' prodOrIndex | qty' <- shrinkPositiveInteger qty]
-shrinkQuery _ = []
---}
+
 instance Arbitrary Lib3.Statements where
     arbitrary :: Gen Lib3.Statements
     arbitrary = oneof
         [ Lib3.Single <$> arbitrary
-        --, Lib3.Batch <$> listOf1 arbitrary
-        --]
-        , Lib3.Batch <$> resize 5 (listOf arbitrary) -- Limit batch size for better parsability
+        , Lib3.Batch <$> resize 5 (listOf arbitrary) 
         ]
-{--
-    shrink (Lib3.Single q) = [Lib3.Single q' | q' <- shrink q]
-    shrink (Lib3.Batch qs) =
-        [Lib3.Batch qs' | qs' <- shrink qs, not (null qs')]
---}
+
 main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "Tests" [unitTests, propertyTests]
+
+propertyTests :: TestTree
+propertyTests = testGroup "Property Tests"
+  [
+    testProperty "Saving and loading preserves state" saveLoadPreservesState
+  ]
+
+saveLoadPreservesState :: Lib3.Statements -> Property
+saveLoadPreservesState statements = monadicIO $ do
+    -- Initialize empty state
+    let initialState = Lib2.emptyState
+    -- Apply statements to initial state
+    let stateAfterStatements = applyStatements' initialState statements
+    case stateAfterStatements of
+        Left _ -> do
+            -- Discard invalid sequences
+            pre False
+        Right stateAfterStmts -> do
+            -- Check if the state has changed
+            if stateAfterStmts == initialState
+                then pre False
+                else do
+                    -- Marshall state to statements
+                    let marshalledStatements = Lib3.marshallState stateAfterStmts
+                    -- Render statements to string
+                    let rendered = Lib3.renderStatements marshalledStatements
+                    -- Parse rendered statements
+                    case Lib3.parseStatements rendered of
+                        Left parseErr -> fail $ "Parsing failed: " ++ parseErr
+                        Right (parsedStmts, _) -> do
+                            -- Apply parsed statements to empty state
+                            let stateAfterLoad = applyStatements' Lib2.emptyState parsedStmts
+                            -- Compare states
+                            assert (stateAfterLoad == Right stateAfterStmts)
+      where
+        applyStatements' :: Lib2.State -> Lib3.Statements -> Either String Lib2.State
+        applyStatements' s stmts = Lib3.applyStatements s stmts
 
 unitTests :: TestTree
 unitTests = testGroup "Lib2 and Lib3 tests"
@@ -255,43 +252,3 @@ unitTests = testGroup "Lib2 and Lib3 tests"
                 [Lib2.Component 2 "tile", Lib2.Component 1 "gameBoard", Lib2.Component 5 "marker"]
                 [Lib2.AddOn "playerBoard" 10.0, Lib2.AddOn "metalResource" 20.0], "")
   ]
-
-
-propertyTests :: TestTree
-propertyTests = testGroup "Property Tests"
-  [
-    testProperty "Saving and loading preserves state" prop_saveLoadPreservesState
-  ]
-
-
-
-prop_saveLoadPreservesState :: Lib3.Statements -> Property
-prop_saveLoadPreservesState statements = monadicIO $ do
-    -- Initialize empty state
-    let initialState = Lib2.emptyState
-    -- Apply statements to initial state
-    let stateAfterStatements = applyStatements' initialState statements
-    case stateAfterStatements of
-        Left _ -> do
-            -- Discard invalid sequences
-            pre False
-        Right stateAfterStmts -> do
-            -- Check if the state has changed
-            if stateAfterStmts == initialState
-                then pre False
-                else do
-                    -- Marshall state to statements
-                    let marshalledStatements = Lib3.marshallState stateAfterStmts
-                    -- Render statements to string
-                    let rendered = Lib3.renderStatements marshalledStatements
-                    -- Parse rendered statements
-                    case Lib3.parseStatements rendered of
-                        Left parseErr -> fail $ "Parsing failed: " ++ parseErr
-                        Right (parsedStmts, _) -> do
-                            -- Apply parsed statements to empty state
-                            let stateAfterLoad = applyStatements' Lib2.emptyState parsedStmts
-                            -- Compare states
-                            assert (stateAfterLoad == Right stateAfterStmts)
-      where
-        applyStatements' :: Lib2.State -> Lib3.Statements -> Either String Lib2.State
-        applyStatements' s stmts = Lib3.applyStatements s stmts

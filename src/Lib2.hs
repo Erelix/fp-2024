@@ -27,15 +27,24 @@ import qualified Data.List as L
 import GHC.Generics (Generic)
 import Text.Read (readMaybe)
 import Data.Char (isDigit, isSpace)
+import Data.List (find)
 
 type Parser a = String -> Either String (a, String)
 
 data Products = Products [Product] deriving (Eq, Show) 
+
 data Product = BoardGame String Double [Product]
              | AddOn String Double
              | Component Integer String
              | BoardGameWithAddOns String Double [Product] [Product]
-             deriving (Eq, Show, Generic)
+             deriving (Show, Generic)
+
+instance Eq Product where
+  (BoardGame name1 _ _) == (BoardGame name2 _ _) = name1 == name2
+  (AddOn name1 _) == (AddOn name2 _) = name1 == name2
+  (Component _ name1) == (Component _ name2) = name1 == name2
+  (BoardGameWithAddOns name1 _ _ _) == (BoardGameWithAddOns name2 _ _ _) = name1 == name2
+  _ == _ = False
 
 -- OR & ANDs
 and1' :: (a -> b) -> Parser a -> Parser b
@@ -179,8 +188,6 @@ parsePrice = orX
     ]
 --}
 
-
-
 parsePrice :: Parser Double
 parsePrice = and2' (\num _ -> num) parseDouble (parseString "eur")
 
@@ -192,8 +199,6 @@ parseDouble input =
         _ -> case readMaybe digits :: Maybe Double of
                 Just num -> Right (num, rest)
                 Nothing -> Left "Invalid number format"
-
-
 
 -- <boardgame_name> ::= "corporateCEOTM" | "baseTM" | ...
 parseBoardGameName :: Parser String
@@ -293,7 +298,6 @@ parseAddOn = and3' (\name _ price -> AddOn name price)
                 (parseChar ' ')
                 parsePrice
 
-
 -- | An entity which represets user input.
 -- It should match the grammar from Laboratory work #1.
 -- Currently it has no constructors but you can introduce
@@ -364,11 +368,19 @@ parseBlackFridayCommand = and1' (const BlackFridayCommand)
                                 (parseString "blackFriday")
 
 -- <product_or_index> ::= <number> | <product>
+-- Helper parser to parse as a product
 parseProductOrIndex :: Parser (Either Product Int)
 parseProductOrIndex = orX 
-    [ parseNumberAsIndex
-    , parseProductAsLeft
+    [ parseProductAsLeft
+    , parseNumberAsIndex
     ]
+
+-- Helper parser to parse as a product
+parseProductAsLeft :: Parser (Either Product Int)
+parseProductAsLeft input = 
+    case parseProduct input of
+        Right (product, rest) -> Right (Left product, rest) -- Wrap as Left Product
+        Left err -> Left err
 
 -- Helper parser to parse as an index
 parseNumberAsIndex :: Parser (Either Product Int)
@@ -377,12 +389,6 @@ parseNumberAsIndex input =
         Right (num, rest) -> Right (Right (fromInteger num), rest) -- Wrap as Right Int
         Left err -> Left err
 
--- Helper parser to parse as a product
-parseProductAsLeft :: Parser (Either Product Int)
-parseProductAsLeft input = 
-    case parseProduct input of
-        Right (product, rest) -> Right (Left product, rest) -- Wrap as Left Product
-        Left err -> Left err
               
 -- | The instances are needed basically for tests
 --instance Eq Query where
@@ -406,7 +412,6 @@ instance Show Query where
     show (TotalCommand p) = "TotalCommand " ++ showEitherProductInt p
     show ViewCommand = "ViewCommand"
     show BlackFridayCommand = "BlackFridayCommand"
-
 
 showEitherProductInt :: Either Product Int -> String
 showEitherProductInt (Left product) = "Product(" ++ show product ++ ")"
@@ -494,10 +499,7 @@ stateTransition state query = case query of
     in Right (Just "New products added to the state.", newState)
 
   GiveDiscountCommand productIdentifier discount ->
-    let targetProduct = case productIdentifier of
-                          Left product -> Just product
-                          Right index -> getProductByIndex (products state) index
-    in case targetProduct of
+    case getProductFromEither (products state) productIdentifier of
         Just product -> 
           let updatedDiscounts = updateOrAddDiscount (discounts state) product discount
               newState = state { discounts = updatedDiscounts }
@@ -611,6 +613,5 @@ applyDiscount price discountPercent = price * (1 - fromIntegral discountPercent 
 
 getProductFromEither :: [Product] -> Either Product Int -> Maybe Product
 getProductFromEither products (Left product) =
-    if product `elem` products then Just product else Nothing
+    find (\p -> productName p == productName product) products
 getProductFromEither products (Right index) = getProductByIndex products index
-
