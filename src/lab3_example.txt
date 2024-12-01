@@ -1,0 +1,121 @@
+root@cf984a9fb00d:/workspaces/fp-2024# stack run fp2024-three --allow-different-user
+Welcome! Press [TAB] for auto completion, type ':paste' for multiline input
+>>> view
+State: Current State:
+Products:
+Discounts:
+Purchase History:
+
+>>> load
+State loaded successfully.
+>>> view
+State: Current State:
+Products:
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0]
+4.  Component 3 "marker"
+5.  BoardGameWithAddOns "foundationsTMAEexp" 50.0 [] []
+6.  BoardGame "automaTMexp" 29.0 [Component 2 "tile",Component 1 "playerBoard"]
+Discounts:
+  AddOn "cardSleeve" 5.0 with 5% discount
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  BoardGameWithAddOns "foundationsTMAEexp" 50.0 [] [] with 20% discount
+Purchase History:
+
+>>> add corporateCEOTM 100eur (contains: 2 tile, 1 gameBoard) [includes: cardSleeve 5eur, miniature 10eur]
+New products added to the state.
+>>> giveDiscount bigBoxTM 150eur (contains: 2 tile, 1 gameBoard, 5 marker) [includes: playerBoard 10eur, metalResource 20eur] 30%
+Discount applied to BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0].
+>>> buy 3 cardSleeve 5eur
+Product bought for 14.25 eur and added to purchase history.
+>>> view
+State: Current State:
+Products:
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0]
+4.  Component 3 "marker"
+5.  BoardGameWithAddOns "foundationsTMAEexp" 50.0 [] []
+6.  BoardGame "automaTMexp" 29.0 [Component 2 "tile",Component 1 "playerBoard"]
+7.  BoardGameWithAddOns "corporateCEOTM" 100.0 [Component 2 "tile",Component 1 "gameBoard"] [AddOn "cardSleeve" 5.0,AddOn "miniature" 10.0]
+Discounts:
+  BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0] with 30% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  BoardGameWithAddOns "foundationsTMAEexp" 50.0 [] [] with 20% discount
+Purchase History:
+  3 units of Left (AddOn "cardSleeve" 5.0)
+
+>>> :save
+No such command :save
+>>> save
+State saved successfully.
+>>> 
+[5]+  Stopped                 stack run fp2024-three --allow-different-user
+root@cf984a9fb00d:/workspaces/fp-2024# stack run fp2024-three --allow-different-user
+Welcome! Press [TAB] for auto completion, type ':paste' for multiline input
+>>> view
+State: Current State:
+Products:
+Discounts:
+Purchase History:
+
+>>> load
+State loaded successfully.
+>>> view
+State: Current State:
+Products:
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0]
+4.  Component 3 "marker"
+5.  BoardGameWithAddOns "foundationsTMAEexp" 50.0 [] []
+6.  BoardGame "automaTMexp" 29.0 [Component 2 "tile",Component 1 "playerBoard"]
+7.  BoardGameWithAddOns "corporateCEOTM" 100.0 [Component 2 "tile",Component 1 "gameBoard"] [AddOn "cardSleeve" 5.0,AddOn "miniature" 10.0]
+Discounts:
+  BoardGameWithAddOns "foundationsTMAEexp" 50.0 [] [] with 20% discount
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
+  BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0] with 30% discount
+Purchase History:
+  3 units of Left (AddOn "cardSleeve" 5.0)
+
+>>> 
+[6]+  Stopped                 stack run fp2024-three --allow-different-user
+
+
+
+root@cf984a9fb00d:/workspaces/fp-2024# stack run fp2024-three --allow-different-user
+Welcome! Press [TAB] for auto completion, type ':paste' for multiline input
+>>> view
+State: Current State:
+Products:
+Discounts:
+Purchase History:
+
+>>> :paste
+-- Entering multi-line mode. Press <Ctrl-D> to finish.
+| BEGIN
+| add corporateCEOTM 99.99eur (contains: 2 tile, 1 gameBoard);
+| giveDiscount corporateCEOTM 99.99eur (contains: 2 tile, 1 gameBoard) 15%;
+| buy 2 corporateCEOTM 99.99eur (contains: 2 tile, 1 gameBoard);
+| END
+| 
+New products added to the state.
+Discount applied to BoardGame "corporateCEOTM" 99.99 [Component 2 "tile",Component 1 "gameBoard"].
+Product bought for 169.98299999999998 eur and added to purchase history.
+
+>>> view
+State: Current State:
+Products:
+1.  BoardGame "corporateCEOTM" 99.99 [Component 2 "tile",Component 1 "gameBoard"]
+Discounts:
+  BoardGame "corporateCEOTM" 99.99 [Component 2 "tile",Component 1 "gameBoard"] with 15% discount
+Purchase History:
+  2 units of Left (BoardGame "corporateCEOTM" 99.99 [Component 2 "tile",Component 1 "gameBoard"])
+
+>>> 
+[9]+  Stopped                 stack run fp2024-three --allow-different-user
+
+

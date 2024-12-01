@@ -2,6 +2,8 @@
 
 # Board game shop
 
+# Lib1
+
 <round_command> rounds up the number to two decimal spaces.
 
 <check_shipping_command> checks if the product price is over 70. If yes, no shipping cost will be applied.
@@ -115,6 +117,7 @@ ellas&hellasTMexp 8.1eur (contains: 0 rules)
    ] 
 </pre>
 
+# Lib2
 
 ### Changes to BNF:
 
@@ -138,5 +141,45 @@ ellas&hellasTMexp 8.1eur (contains: 0 rules)
 
 #### NOTE:
    The changes to BNF were made because there either were mistakes or for clarity, simplicity purposes. The main logic hasn't been changed. The examples up above are still valid.
+
+
+# Lib3
+
+### Loading, Saving
+State can be saved with ":save" in storage.txt. Loaded with ":load".
+
+storage.txt example:
+<pre>
+BEGIN
+add corporateCEOTM 50.0eur (contains: ), cardSleeve 5.0eur, bigBoxTM 150.0eur (contains: 2 tile, 1 gameBoard, 5 marker) [includes: playerBoard 10.0eur, metalResource 20.0eur], 3 marker, foundationsTMAEexp 50.0eur (contains: ) [includes: ];
+giveDiscount corporateCEOTM 50.0eur (contains: ) 10%;
+giveDiscount cardSleeve 5.0eur 5%
+END
+</pre>
+
+### Batch processing
+1. To start ":paste" in cmd
+2. BEGIN
+3. commands with ";" at the end. New command - new line.
+4. END
+5. Ctrl-d
+
+Batch processing example:
+<pre>
+>>> :paste
+-- Entering multi-line mode. Press <Ctrl-D> to finish.
+| BEGIN
+| add corporateCEOTM 99.99eur (contains: 2 tile, 1 gameBoard);
+| giveDiscount corporateCEOTM 99.99eur (contains: 2 tile, 1 gameBoard) 15%;
+| buy 2 corporateCEOTM 99.99eur (contains: 2 tile, 1 gameBoard);
+| END
+| 
+New products added to the state.
+Discount applied to BoardGame "corporateCEOTM" 99.99 [Component 2 "tile",Component 1 "gameBoard"].
+Product bought for 169.98299999999998 eur and added to purchase history.
+</pre>
+
+
+### Changes to Lib2:
 
 

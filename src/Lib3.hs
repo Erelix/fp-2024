@@ -90,8 +90,7 @@ parseStatements input =
     let trimmedInput = dropWhile isSpace input
     in if "BEGIN" `isPrefixOf` trimmedInput
        then parseBatch (drop 5 trimmedInput)
-       else Left "Expected 'BEGIN' to start a batch of statements."
-
+       else parseSingleStatement trimmedInput
 
 -- | Parses a batch of queries delimited by BEGIN and END.
 parseBatch :: String -> Either String (Statements, String)

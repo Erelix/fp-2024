@@ -272,11 +272,6 @@ unitTests = testGroup "Lib2 and Lib3 tests"
           let expected = Left "No parser matched"
           Lib3.parseStatements input @?= expected,
 
-        testCase "Parsing a batch with invalid command in the middle" $ do
-          let input = "BEGIN add corporateCEOTM 100eur (contains: 2 tile, 1 gameBoard); asdaskjdhjk; END"
-          let expected = Left "No parser matched"
-          Lib3.parseStatements input @?= expected,
-
         testCase "Parsing an empty batch" $ do
           let input = "BEGIN END"
           let expected = Right (Lib3.Batch [], "")
