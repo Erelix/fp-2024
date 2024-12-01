@@ -250,5 +250,36 @@ unitTests = testGroup "Lib2 and Lib3 tests"
           Lib2.parseProduct "bigBoxTM 150eur (contains: 2 tile, 1 gameBoard, 5 marker) [includes: playerBoard 10eur, metalResource 20eur]" 
           @?= Right (Lib2.BoardGameWithAddOns "bigBoxTM" 150.0
                 [Lib2.Component 2 "tile", Lib2.Component 1 "gameBoard", Lib2.Component 5 "marker"]
-                [Lib2.AddOn "playerBoard" 10.0, Lib2.AddOn "metalResource" 20.0], "")
+                [Lib2.AddOn "playerBoard" 10.0, Lib2.AddOn "metalResource" 20.0], ""),
+
+    testGroup "Batch Parsing Tests"
+      [ 
+        testCase "Parsing a valid batch of commands" $ do
+          let input = "BEGIN add corporateCEOTM 100eur (contains: 2 tile, 1 gameBoard); giveDiscount corporateCEOTM 100eur (contains: 2 tile, 1 gameBoard) 10%; END"
+          let expected = Right (Lib3.Batch 
+                                [ Lib2.AddCommand [Lib2.BoardGame "corporateCEOTM" 100.0 [Lib2.Component 2 "tile", Lib2.Component 1 "gameBoard"]]
+                                , Lib2.GiveDiscountCommand (Left (Lib2.BoardGame "corporateCEOTM" 100.0 [])) 10
+                                ], "")
+          Lib3.parseStatements input @?= expected,
+
+        testCase "Parsing a batch with missing BEGIN" $ do
+          let input = "add corporateCEOTM 100eur (contains: 2 tile, 1 gameBoard); giveDiscount corporateCEOTM 10%; END"
+          let expected = Left "Expected 'BEGIN' to start a batch of statements."
+          Lib3.parseStatements input @?= expected,
+
+        testCase "Parsing a batch with missing END" $ do
+          let input = "BEGIN add corporateCEOTM 100eur (contains: 2 tile, 1 gameBoard); giveDiscount corporateCEOTM 10%;"
+          let expected = Left "No parser matched"
+          Lib3.parseStatements input @?= expected,
+
+        testCase "Parsing a batch with invalid command in the middle" $ do
+          let input = "BEGIN add corporateCEOTM 100eur (contains: 2 tile, 1 gameBoard); asdaskjdhjk; END"
+          let expected = Left "No parser matched"
+          Lib3.parseStatements input @?= expected,
+
+        testCase "Parsing an empty batch" $ do
+          let input = "BEGIN END"
+          let expected = Right (Lib3.Batch [], "")
+          Lib3.parseStatements input @?= expected
+      ]
   ]

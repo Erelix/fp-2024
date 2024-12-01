@@ -83,7 +83,6 @@ parseCommand input =
 -- | Parses Statements.
 -- Must be used in parseCommand.
 -- Reuse Lib2 as much as you can.
-
 -- <statements> ::= "BEGIN " <query_list> "END"
 -- <query_list> ::= <query> ";" | <query> ";" <query_list>
 parseStatements :: String -> Either String (Statements, String)
@@ -91,7 +90,8 @@ parseStatements input =
     let trimmedInput = dropWhile isSpace input
     in if "BEGIN" `isPrefixOf` trimmedInput
        then parseBatch (drop 5 trimmedInput)
-       else parseSingleStatement trimmedInput
+       else Left "Expected 'BEGIN' to start a batch of statements."
+
 
 -- | Parses a batch of queries delimited by BEGIN and END.
 parseBatch :: String -> Either String (Statements, String)
@@ -112,13 +112,11 @@ parseBatch input =
                     Left e -> Left e
     in parseMultipleQueries input []
 
-
 stripSemicolon :: String -> Either String String
 stripSemicolon input =
     let trimmed = dropWhile isSpace input
     in if ";" `isPrefixOf` trimmed
        then Right (drop 1 trimmed)
-       --else Left "Expected ';' between queries."
        else Right (drop 0 trimmed)
 
 
@@ -186,25 +184,16 @@ renderProdOrIndex (Right index) = show index
 stateTransition :: TVar Lib2.State -> Command -> Chan StorageOp ->
                    IO (Either String (Maybe String))
 stateTransition stateVar command ioChan = case command of
-    StatementCommand stmts -> atomically $ case stmts of
-        Single query -> do
-            state <- readTVar stateVar
-            case Lib2.stateTransition state query of
+    StatementCommand stmts -> atomically $ do
+        state <- readTVar stateVar
+        case stmts of
+            Single query -> case Lib2.stateTransition state query of
                 Right (msg, newState) -> do
                     writeTVar stateVar newState
                     return $ Right msg
                 Left err -> return $ Left err
-        Batch queries -> do
-            state <- readTVar stateVar
-            result <- foldM
-                (\prevResult q -> case prevResult of
-                    Left err -> return $ Left err
-                    Right (s, msgs) -> case Lib2.stateTransition s q of
-                        Right (msg, newState) -> return $ Right (newState, msgs ++ maybeToList msg)
-                        Left err -> return $ Left err
-                    )
-                (Right (state, [])) queries
-            case result of
+
+            Batch queries -> case applyBatchQueries state queries of
                 Right (newState, msgs) -> do
                     writeTVar stateVar newState
                     return $ Right (Just (unlines msgs))
@@ -218,19 +207,30 @@ stateTransition stateVar command ioChan = case command of
         writeChan ioChan (Save content responseChan)
         _ <- readChan responseChan
         return $ Right (Just "State saved successfully.")
+
     LoadCommand -> do
         responseChan <- newChan
         writeChan ioChan (Load responseChan)
         content <- readChan responseChan
         case parseStatements content of
-            Right (stmts, _) -> do
-                state <- atomically $ readTVar stateVar
+            Right (stmts, _) -> atomically $ do
+                state <- readTVar stateVar
                 case applyStatements state stmts of
                     Right newState -> do
-                        atomically $ writeTVar stateVar newState
+                        writeTVar stateVar newState
                         return $ Right (Just "State loaded successfully.")
                     Left err -> return $ Left ("Failed to apply loaded state: " ++ err)
             Left err -> return $ Left ("Failed to parse saved state: " ++ err)
+
+-- Helper function to apply a batch of queries atomically
+applyBatchQueries :: Lib2.State -> [Lib2.Query] -> Either String (Lib2.State, [String])
+applyBatchQueries state queries =
+    foldM
+        (\(currentState, msgs) query -> case Lib2.stateTransition currentState query of
+            Right (msg, newState) -> Right (newState, msgs ++ maybeToList msg)
+            Left err -> Left err)
+        (state, [])
+        queries
 
 -- Helper function for LoadCommand
 applyStatements :: Lib2.State -> Statements -> Either String Lib2.State

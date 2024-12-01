@@ -72,4 +72,4 @@
 
 <statements> ::= "BEGIN " <query_list> "END"
 
-<query_list> ::= <query> | <query> "; " <query_list>
+<query_list> ::= <query> ";" | <query> "; " <query_list>
