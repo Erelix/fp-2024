@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Lib2
     ( Query(..),
       Product(..),
@@ -23,6 +24,9 @@ module Lib2
 
 import qualified Data.Char as C
 import qualified Data.List as L
+import GHC.Generics (Generic)
+import Text.Read (readMaybe)
+import Data.Char (isDigit, isSpace)
 
 type Parser a = String -> Either String (a, String)
 
@@ -31,7 +35,7 @@ data Product = BoardGame String Double [Product]
              | AddOn String Double
              | Component Integer String
              | BoardGameWithAddOns String Double [Product] [Product]
-             deriving (Eq, Show)
+             deriving (Eq, Show, Generic)
 
 -- OR & ANDs
 and1' :: (a -> b) -> Parser a -> Parser b
@@ -162,7 +166,7 @@ parseDiscount :: Parser Integer
 parseDiscount = and2' (\number _ -> number) 
                 parseNumber 
                 (parseChar '%')
-
+{--
 -- <price> ::= <number> "eur" | <number> "." <number> "eur"
 parsePrice :: Parser Double
 parsePrice = orX 
@@ -173,6 +177,23 @@ parsePrice = orX
             parseNumber 
             (parseString "eur")
     ]
+--}
+
+
+
+parsePrice :: Parser Double
+parsePrice = and2' (\num _ -> num) parseDouble (parseString "eur")
+
+parseDouble :: Parser Double
+parseDouble input =
+    let (digits, rest) = span (\c -> isDigit c || c == '.') input
+    in case digits of
+        "" -> Left "Not a number"
+        _ -> case readMaybe digits :: Maybe Double of
+                Just num -> Right (num, rest)
+                Nothing -> Left "Invalid number format"
+
+
 
 -- <boardgame_name> ::= "corporateCEOTM" | "baseTM" | ...
 parseBoardGameName :: Parser String
@@ -286,6 +307,7 @@ data Query = CheckShippingCommand (Either Product Int)
            | ViewCommand
            | BlackFridayCommand
            | TotalCommand (Either Product Int)
+           deriving (Generic)
 
 -- <view_command> ::= "view"
 parseViewCommand :: Parser Query
@@ -376,12 +398,15 @@ instance Eq Query where
 --instance Show Query where
 --  show _ = ""
 instance Show Query where
-    show (CheckShippingCommand p) = "CheckShippingCommand " ++ show p
+    show (CheckShippingCommand p) = "CheckShippingCommand " ++ showEitherProductInt p
     show (AddCommand ps) = "AddCommand " ++ show ps
-    show (GiveDiscountCommand p d) = "GiveDiscountCommand " ++ show p ++ " " ++ show d
-    show (BuyCommand q p) = "BuyCommand " ++ show q ++ " " ++ show p
+    show (GiveDiscountCommand p d) = "GiveDiscountCommand " ++ showEitherProductInt p ++ " " ++ show d
+    show (BuyCommand q p) = "BuyCommand " ++ show q ++ " " ++ showEitherProductInt p
     show (CompareCommand p1 p2) = "CompareCommand " ++ showEitherProductInt p1 ++ " " ++ showEitherProductInt p2 
-    show (TotalCommand p) = "TotalCommand " ++ showEitherProductInt p 
+    show (TotalCommand p) = "TotalCommand " ++ showEitherProductInt p
+    show ViewCommand = "ViewCommand"
+    show BlackFridayCommand = "BlackFridayCommand"
+
 
 showEitherProductInt :: Either Product Int -> String
 showEitherProductInt (Left product) = "Product(" ++ show product ++ ")"
@@ -419,15 +444,15 @@ data State = State
 
 presetProducts :: [Product]
 presetProducts =
-  [ BoardGame "corporateCEOTM" 50.0 []
+  [{-- BoardGame "corporateCEOTM" 50.0 []
   , AddOn "cardSleeve" 5.0
-  ]
+  --}]
 
 presetDiscounts :: [(Product, Integer)]
 presetDiscounts =
-  [ (BoardGame "corporateCEOTM" 50.0 [], 10)
+  [{-- (BoardGame "corporateCEOTM" 50.0 [], 10)
   , (AddOn "cardSleeve" 5.0, 5)
-  ]
+  --}]
 
 -- | Creates an initial program's state.
 -- It is called once when the program starts.
@@ -538,10 +563,13 @@ getProductByIndex products index
 
 -- Helper function to add or update a discount in the discounts list
 updateOrAddDiscount :: [(Product, Integer)] -> Product -> Integer -> [(Product, Integer)]
-updateOrAddDiscount [] product discount = [(product, discount)]
-updateOrAddDiscount ((p, d) : xs) product discount
-  | p == product = (product, discount) : xs  -- Updates existing discount
-  | otherwise = (p, d) : updateOrAddDiscount xs product discount  -- Recur if not found
+updateOrAddDiscount discounts product discount =
+    let updatedDiscounts = map (\(p, d) ->
+            if productName p == productName product
+            then (product, discount) else (p, d)) discounts
+    in if any (\(p, _) -> productName p == productName product) discounts
+       then updatedDiscounts
+       else (product, discount) : discounts
 
 
 -- Function to calculate the total price within a product considering discounts
@@ -567,13 +595,22 @@ calculateTotalWithinProduct product discounts = case product of
         in discountedPrice + componentsTotal + addonsTotal
 
 getDiscountForProduct :: Product -> [(Product, Integer)] -> Integer
-getDiscountForProduct product discounts = case lookup product discounts of
-    Just discount -> discount
-    Nothing -> 0  -- No discount
+getDiscountForProduct product discounts =
+    case L.find (\(p, _) -> productName p == productName product) discounts of
+        Just (_, discount) -> discount
+        Nothing -> 0  -- No discount
+
+productName :: Product -> String
+productName (BoardGame name _ _) = name
+productName (AddOn name _) = name
+productName (Component _ name) = name
+productName (BoardGameWithAddOns name _ _ _) = name
 
 applyDiscount :: Double -> Integer -> Double
 applyDiscount price discountPercent = price * (1 - fromIntegral discountPercent / 100.0)
 
 getProductFromEither :: [Product] -> Either Product Int -> Maybe Product
-getProductFromEither _ (Left product) = Just product
+getProductFromEither products (Left product) =
+    if product `elem` products then Just product else Nothing
 getProductFromEither products (Right index) = getProductByIndex products index
+

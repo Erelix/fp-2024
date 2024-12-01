@@ -1,5 +1,5 @@
 BEGIN
-add corporateCEOTM 50.0eur (contains: ), cardSleeve 5.0eur;
-giveDiscount corporateCEOTM 50.0eur (contains: ) 10%;
+add corporateCEOTM 50.0eur (contains: ), cardSleeve 5.0eur, bigBoxTM 150.0eur (contains: 2 tile, 1 gameBoard, 5 marker) [includes: playerBoard 10.0eur, metalResource 20.0eur], 3 marker, foundationsTMAEexp 50.0eur (contains: ) [includes: ];
 giveDiscount cardSleeve 5.0eur 5%;
+giveDiscount corporateCEOTM 50.0eur (contains: ) 10%
 END

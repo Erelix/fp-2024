@@ -1,4 +1,5 @@
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Lib3
     ( stateTransition,
       StorageOp (..),
@@ -8,6 +9,8 @@ module Lib3
       marshallState,
       renderStatements,
       parseBatch,
+      applyStatements,
+      Statements (..)
     ) where
 
 import Control.Concurrent.Chan (Chan, readChan, writeChan, newChan)
@@ -18,6 +21,7 @@ import Control.Concurrent.STM (atomically, readTVar, writeTVar, TVar)
 import Control.Monad (foldM)
 import Data.Char (isSpace)
 import Data.List (intercalate, isPrefixOf)
+import GHC.Generics (Generic)
 import qualified Lib2
 import Data.Maybe (maybeToList)
 
@@ -45,7 +49,7 @@ handleReadException _ = return ""
 
 data Statements = Batch [Lib2.Query] |
                  Single Lib2.Query
-                 deriving (Show, Eq)
+                 deriving (Show, Eq, Generic)
 
 data Command = StatementCommand Statements |
                LoadCommand |
@@ -77,6 +81,9 @@ parseCommand input =
 -- | Parses Statements.
 -- Must be used in parseCommand.
 -- Reuse Lib2 as much as you can.
+
+-- <statements> ::= "BEGIN " <query_list> "END"
+-- <query_list> ::= <query> ";" | <query> ";" <query_list>
 parseStatements :: String -> Either String (Statements, String)
 parseStatements input =
     let trimmedInput = dropWhile isSpace input
@@ -94,18 +101,24 @@ parseBatch input =
                then Right (Batch acc, drop 3 trimmed)
                else case Lib2.parseQuery trimmed of
                     Right (query, rest) ->
-                        case stripSemicolon rest of
-                            Right next -> parseMultipleQueries next (acc ++ [query])
-                            Left e -> Left e
+                        let trimmedRest = dropWhile isSpace rest
+                        in if "END" `isPrefixOf` trimmedRest
+                           then Right (Batch (acc ++ [query]), drop 3 trimmedRest)
+                           else case stripSemicolon rest of
+                                Right next -> parseMultipleQueries next (acc ++ [query])
+                                Left e -> Left e
                     Left e -> Left e
     in parseMultipleQueries input []
+
 
 stripSemicolon :: String -> Either String String
 stripSemicolon input =
     let trimmed = dropWhile isSpace input
     in if ";" `isPrefixOf` trimmed
        then Right (drop 1 trimmed)
-       else Left "Expected ';' between queries."
+       --else Left "Expected ';' between queries."
+       else Right (drop 0 trimmed)
+
 
 -- | Parses a single statement (non-batch).
 parseSingleStatement :: String -> Either String (Statements, String)
@@ -126,7 +139,12 @@ marshallState state =
 -- can be parsed back into Statements by parseStatements
 renderStatements :: Statements -> String
 renderStatements (Single query) = renderQuery query
-renderStatements (Batch queries) = "BEGIN\n" ++ unlines (map ((++ ";") . renderQuery) queries) ++ "END"
+renderStatements (Batch queries) = "BEGIN\n" ++ renderBatch queries ++ "END"
+
+renderBatch :: [Lib2.Query] -> String
+renderBatch [] = ""
+renderBatch [lastQuery] = renderQuery lastQuery ++ "\n" -- No semicolon for the last query
+renderBatch (query:rest) = renderQuery query ++ ";\n" ++ renderBatch rest
 
 renderQuery :: Lib2.Query -> String
 renderQuery query =
