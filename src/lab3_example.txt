@@ -1,3 +1,47 @@
+-- New commands made functional
+
+Welcome! Press [TAB] for auto completion, type ':paste' for multiline input
+>>> view
+State: Current State:
+Products:
+Discounts:
+Purchase History:
+
+>>> load
+State loaded successfully.
+>>> view
+State: Current State:
+Products:
+1.  BoardGame "corporateCEOTM" 50.0 []
+2.  AddOn "cardSleeve" 5.0
+3.  BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0]
+4.  Component 3 "marker"
+5.  BoardGameWithAddOns "foundationsTMAEexp" 50.0 [] []
+6.  BoardGame "automaTMexp" 29.0 [Component 2 "tile",Component 1 "playerBoard"]
+7.  BoardGameWithAddOns "corporateCEOTM" 100.0 [Component 2 "tile",Component 1 "gameBoard"] [AddOn "cardSleeve" 5.0,AddOn "miniature" 10.0]
+Discounts:
+  BoardGameWithAddOns "foundationsTMAEexp" 50.0 [] [] with 20% discount
+  BoardGame "corporateCEOTM" 50.0 [] with 10% discount
+  AddOn "cardSleeve" 5.0 with 5% discount
+  BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0] with 30% discount
+Purchase History:
+  3 units of Left (AddOn "cardSleeve" 5.0)
+
+>>> compare 3 4
+Component 3 "marker" is cheaper than BoardGameWithAddOns "bigBoxTM" 150.0 [Component 2 "tile",Component 1 "gameBoard",Component 5 "marker"] [AddOn "playerBoard" 10.0,AddOn "metalResource" 20.0] by 135.0 eur.
+>>> checkShipping 6
+Shipping cost for this product is 3.99 eur.
+>>> total 7
+Total price of the product: 104.75 eur.
+>>> 
+[1]+  Stopped                 stack run fp2024-three --allow-different-user
+root@cf984a9fb00d:/workspaces/fp-2024# 
+
+
+
+
+-- Loading, Saving
+
 root@cf984a9fb00d:/workspaces/fp-2024# stack run fp2024-three --allow-different-user
 Welcome! Press [TAB] for auto completion, type ':paste' for multiline input
 >>> view
@@ -85,6 +129,8 @@ Purchase History:
 [6]+  Stopped                 stack run fp2024-three --allow-different-user
 
 
+
+-- Batch processing
 
 root@cf984a9fb00d:/workspaces/fp-2024# stack run fp2024-three --allow-different-user
 Welcome! Press [TAB] for auto completion, type ':paste' for multiline input

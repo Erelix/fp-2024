@@ -146,7 +146,7 @@ ellas&hellasTMexp 8.1eur (contains: 0 rules)
 # Lib3
 
 ### Loading, Saving
-State can be saved with ":save" in storage.txt. Loaded with ":load".
+State can be saved with "save" in storage.txt. Loaded with "load".
 
 storage.txt example:
 <pre>
@@ -159,9 +159,9 @@ END
 
 ### Batch processing
 1. To start ":paste" in cmd
-2. BEGIN
+2. write "BEGIN"
 3. commands with ";" at the end. New command - new line.
-4. END
+4. write "END"
 5. Ctrl-d
 
 Batch processing example:
@@ -182,4 +182,9 @@ Product bought for 169.98299999999998 eur and added to purchase history.
 
 ### Changes to Lib2:
 
-
+1. Made <check_shipping_command>, <total_command>, <compare_command> functional
+2. Improved <buy_command> so that it displays for how much product has been bought.
+3. Removed <round_command> as it was never used and will never be used.
+4. Added parseDouble as there where problems in Property tests comparing Doubles - rounding up is random.
+5. Added "instance Eq Product where" because there where problems comparing products in Property tests. Now they are compared by name.
+6. Changed parseProductOrIndex to first do parseProductAsLeft then parseNumberAsIndex because there were problems with add command when adding component. quantinty was classified as index. (Problem found by property tests)
