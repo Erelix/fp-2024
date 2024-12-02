@@ -109,37 +109,27 @@ tests :: TestTree
 tests = testGroup "Tests" [unitTests, propertyTests]
 
 propertyTests :: TestTree
-propertyTests = testGroup "Property Tests"
-  [
-    testProperty "Saving and loading preserves state" saveLoadPreservesState
-  ]
-
+propertyTests = testGroup "Property Tests" [
+  testProperty "Saving and loading preserves state" saveLoadPreservesState
+]
+  
 saveLoadPreservesState :: Lib3.Statements -> Property
 saveLoadPreservesState statements = monadicIO $ do
-    -- Initialize empty state
     let initialState = Lib2.emptyState
-    -- Apply statements to initial state
     let stateAfterStatements = applyStatements' initialState statements
     case stateAfterStatements of
         Left _ -> do
-            -- Discard invalid sequences
             pre False
         Right stateAfterStmts -> do
-            -- Check if the state has changed
             if stateAfterStmts == initialState
                 then pre False
                 else do
-                    -- Marshall state to statements
                     let marshalledStatements = Lib3.marshallState stateAfterStmts
-                    -- Render statements to string
                     let rendered = Lib3.renderStatements marshalledStatements
-                    -- Parse rendered statements
                     case Lib3.parseStatements rendered of
                         Left parseErr -> fail $ "Parsing failed: " ++ parseErr
                         Right (parsedStmts, _) -> do
-                            -- Apply parsed statements to empty state
                             let stateAfterLoad = applyStatements' Lib2.emptyState parsedStmts
-                            -- Compare states
                             assert (stateAfterLoad == Right stateAfterStmts)
       where
         applyStatements' :: Lib2.State -> Lib3.Statements -> Either String Lib2.State
