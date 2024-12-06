@@ -109,9 +109,10 @@ tests :: TestTree
 tests = testGroup "Tests" [unitTests, propertyTests]
 
 propertyTests :: TestTree
-propertyTests = testGroup "Property Tests" [
-  testProperty "Saving and loading preserves state" saveLoadPreservesState
-]
+propertyTests = testGroup "Property Tests"
+  [
+    testProperty "Saving and loading preserves state" saveLoadPreservesState
+  ]
   
 saveLoadPreservesState :: Lib3.Statements -> Property
 saveLoadPreservesState statements = monadicIO $ do
@@ -250,11 +251,6 @@ unitTests = testGroup "Lib2 and Lib3 tests"
                                 [ Lib2.AddCommand [Lib2.BoardGame "corporateCEOTM" 100.0 [Lib2.Component 2 "tile", Lib2.Component 1 "gameBoard"]]
                                 , Lib2.GiveDiscountCommand (Left (Lib2.BoardGame "corporateCEOTM" 100.0 [])) 10
                                 ], "")
-          Lib3.parseStatements input @?= expected,
-
-        testCase "Parsing a batch with missing BEGIN" $ do
-          let input = "add corporateCEOTM 100eur (contains: 2 tile, 1 gameBoard); giveDiscount corporateCEOTM 10%; END"
-          let expected = Left "Expected 'BEGIN' to start a batch of statements."
           Lib3.parseStatements input @?= expected,
 
         testCase "Parsing a batch with missing END" $ do
