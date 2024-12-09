@@ -25,12 +25,16 @@ source-repository head
 
 library
   exposed-modules:
-      BoardgameShop
-      Lessons.Lesson01
       Lib1
       Lib2
       Lib3
+      AppDSL
+      Interpreters
+      InterpretersBatch
+      InterpretersInMemory
   other-modules:
+      BoardgameShop
+      Lessons.Lesson01
       Paths_fp2024
   autogen-modules:
       Paths_fp2024
@@ -41,12 +45,17 @@ library
       QuickCheck
     , async
     , base >=4.7 && <5
+    , bytestring
     , free
+    , http-conduit
+    , lens
     , mtl
     , random
     , stm
     , strict
+    , string-conversions
     , transformers
+    , wreq
   default-language: Haskell2010
 
 executable fp2024-four-client
@@ -79,10 +88,13 @@ executable fp2024-four-server
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , bytestring
     , fp2024
+    , lens
     , repline
     , scotty
     , string-conversions
+    , wreq
   default-language: Haskell2010
 
 executable fp2024-one

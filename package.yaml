@@ -35,15 +35,29 @@ ghc-options:
 
 library:
   source-dirs: src
+  exposed-modules:
+    - Lib1
+    - Lib2
+    - Lib3
+    - AppDSL
+    - Interpreters
+    - InterpretersBatch
+    - InterpretersInMemory
   dependencies:
-  - free
-  - random
-  - stm
-  - async
-  - QuickCheck
-  - transformers
-  - strict
-  - mtl
+    - free
+    - random
+    - stm
+    - async
+    - QuickCheck
+    - transformers
+    - strict
+    - mtl
+    - http-conduit
+    - wreq
+    - lens
+    - bytestring
+    - string-conversions
+
 
 executables:
   fp2024-one:
@@ -105,6 +119,9 @@ executables:
     - repline
     - scotty
     - string-conversions
+    - bytestring
+    - wreq
+    - lens
 
 tests:
   fp2024-test:
