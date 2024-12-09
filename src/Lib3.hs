@@ -163,7 +163,7 @@ renderProducts :: [Lib2.Product] -> String
 renderProducts = intercalate ", " . map renderProduct
 
 formatPrice :: Double -> String
-formatPrice price = showFFloat Nothing price ""
+formatPrice price = showFFloat (Just 2) price ""
 
 renderProduct :: Lib2.Product -> String
 renderProduct (Lib2.BoardGame name price components) =
