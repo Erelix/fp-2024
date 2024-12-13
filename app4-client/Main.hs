@@ -1,20 +1,19 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Main (main) where
 
-import Data.ByteString.Char8 (pack)
-import Network.Wreq
-import Data.String.Conversions (cs)
-import Control.Lens
+import AppDSL
+import Interpreters (runHttpPerCommand) 
+import Lib2 (Product(..))
 
 main :: IO ()
 main = do
-    let commands = ["works?", "add TestGame", "buy 2 TestGame"]
-    mapM_ sendCommand commands
-
-sendCommand :: String -> IO ()
-sendCommand cmd = do
-    let rawRequest = pack cmd
-    resp <- post "http://localhost:3000" rawRequest
-    putStrLn $ "Client sent: " ++ cmd
-    putStrLn $ "Server responded: " ++ cs (resp ^. responseBody)
+    let program = do
+          _ <- addProducts [AddOn "playerBoard" 5]
+          _ <- viewState
+          _ <- buyProduct 2 (Left (AddOn "playerBoard" 5))
+          _ <- addProducts [BoardGame "venusTMexp" 200.0 []]
+          _ <- viewState
+          _ <- giveDiscount (Right 2) 20
+          return "Finished running DSL program"
+    
+    result <- runHttpPerCommand program
+    print result

@@ -7,7 +7,6 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad (foldM)
 import Data.IORef
 
--- Convert AppF step into a Lib2.Query:
 toQuery :: AppF a -> Query
 toQuery (DoAddCommand ps _) = AddCommand ps
 toQuery (DoBuyCommand qty p _) = BuyCommand qty p
@@ -18,7 +17,6 @@ toQuery (DoTotalCommand p _) = TotalCommand p
 toQuery (DoBlackFriday _) = BlackFridayCommand
 toQuery (DoView _) = ViewCommand
 
--- Interpret the App in memory:
 runInMemory :: App a -> IO a
 runInMemory app = do
     ref <- newIORef emptyState

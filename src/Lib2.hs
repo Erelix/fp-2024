@@ -472,7 +472,7 @@ stateTransition state query = case query of
                 newState = state { purchaseHistory = newPurchaseHistory }
             in Right (Just ("Product bought for " ++ show totalPrice ++ " eur and added to purchase history."), newState)
         Nothing ->
-            Left "Error: Invalid product or index provided."
+            Left "Error: Invalid product or index provided. (BuyCommand)"
 
   TotalCommand productOrIndex ->
     case getProductFromEither (products state) productOrIndex of
@@ -480,7 +480,7 @@ stateTransition state query = case query of
             let total = calculateTotalWithinProduct product (discounts state)
             in Right (Just $ "Total price of the product: " ++ show total ++ " eur.", state)
         Nothing ->
-            Left "Error: Invalid product or index provided."
+            Left "Error: Invalid product or index provided.(TotalCommand)"
 
   CheckShippingCommand productOrIndex ->
     case getProductFromEither (products state) productOrIndex of
@@ -492,7 +492,7 @@ stateTransition state query = case query of
                             else "Shipping cost for this product is 3.99 eur."
             in Right (Just message, state)
         Nothing ->
-            Left "Error: Invalid product or index provided."
+            Left "Error: Invalid product or index provided.(CheckShippingCommand)"
 
   CompareCommand productOrIndex1 productOrIndex2 ->
     case (getProductFromEither (products state) productOrIndex1, 

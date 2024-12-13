@@ -57,7 +57,8 @@ library:
     - lens
     - bytestring
     - string-conversions
-
+    - tasty
+    - tasty-hunit 
 
 executables:
   fp2024-one:
@@ -122,6 +123,7 @@ executables:
     - bytestring
     - wreq
     - lens
+    - stm
 
 tests:
   fp2024-test:

@@ -9,35 +9,63 @@ import Network.HTTP.Simple
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy as BL
 
-import Data.Maybe (fromMaybe)
+import Data.List (intercalate)
 
--- Convert a single DSL step (AppF) into a textual command representing a Lib2 Query
+renderProductGrammar :: Product -> String
+renderProductGrammar (BoardGame name price components) =
+    name ++ " " ++ formatPrice price ++ "eur (contains: " ++ renderComponentsGrammar components ++ ")"
+renderProductGrammar (AddOn name price) =
+    name ++ " " ++ formatPrice price ++ "eur"
+renderProductGrammar (Component qty cname) =
+    show qty ++ " " ++ cname
+renderProductGrammar (BoardGameWithAddOns name price comps addons) =
+    let base = renderProductGrammar (BoardGame name price comps)
+        addOnsStr = renderProductsGrammar addons
+    in base ++ " [includes: " ++ addOnsStr ++ "]"
+
+
+renderProductsGrammar :: [Product] -> String
+renderProductsGrammar [] = ""
+renderProductsGrammar [p] = renderProductGrammar p
+renderProductsGrammar (p:ps) = renderProductGrammar p ++ ", " ++ renderProductsGrammar ps
+
+
+renderComponentsGrammar :: [Product] -> String
+renderComponentsGrammar [] = "" 
+renderComponentsGrammar [c] = renderProductGrammar c
+renderComponentsGrammar (c:cs) = renderProductGrammar c ++ ", " ++ renderComponentsGrammar cs
+
+
+renderProdOrIndexGrammar :: Either Product Int -> String
+renderProdOrIndexGrammar (Left prod) = renderProductGrammar prod
+renderProdOrIndexGrammar (Right i) = show i
+
+
+formatPrice :: Double -> String
+formatPrice price =
+    let s = show price
+    in if '.' `elem` s
+       then reverse (dropWhile (== '0') (reverse s))
+       else s
+
 toQueryString :: AppF a -> String
 toQueryString (DoAddCommand products _) =
-    "add " ++ renderProducts products
-  where
-    renderProducts = unwords . map show
+    "add " ++ renderProductsGrammar products
 
 toQueryString (DoBuyCommand qty p _) =
-    let target = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p
-    in "buy " ++ show qty ++ " " ++ target
+    "buy " ++ show qty ++ " " ++ renderProdOrIndexGrammar p
 
 toQueryString (DoGiveDiscountCommand p d _) =
-    let target = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p
-    in "giveDiscount " ++ target ++ " " ++ show d ++ "%"
+    "giveDiscount " ++ renderProdOrIndexGrammar p ++ " " ++ show d ++ "%"
 
 toQueryString (DoCheckShippingCommand p _) =
-    let target = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p
-    in "checkShipping " ++ target
+    "checkShipping " ++ renderProdOrIndexGrammar p
 
 toQueryString (DoCompareCommand p1 p2 _) =
-    let t1 = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p1
-        t2 = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p2
-    in "compare " ++ t1 ++ " " ++ t2
+    "compare " ++ renderProdOrIndexGrammar p1 ++ " " ++ renderProdOrIndexGrammar p2
 
 toQueryString (DoTotalCommand p _) =
-    let target = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p
-    in "total " ++ target
+    "total " ++ renderProdOrIndexGrammar p
 
 toQueryString (DoBlackFriday _) =
     "blackFriday"
@@ -45,7 +73,6 @@ toQueryString (DoBlackFriday _) =
 toQueryString (DoView _) =
     "view"
 
--- Sends a single command to the server and returns the response as Maybe String
 sendCommand :: String -> IO (Maybe String)
 sendCommand cmd = do
     initReq <- parseRequest "http://localhost:8080/command"
@@ -54,8 +81,6 @@ sendCommand cmd = do
     let body = getResponseBody resp
     return $ if BS.null body then Nothing else Just (BS.unpack body)
 
-
--- Interpreter that runs one command at a time, making an HTTP request for each
 runHttpPerCommand :: App a -> IO a
 runHttpPerCommand (Pure a) = return a
 runHttpPerCommand (Free step) = do

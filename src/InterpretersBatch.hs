@@ -1,42 +1,46 @@
 {-# LANGUAGE OverloadedStrings #-}
-
 module InterpretersBatch (runHttpBatch) where
 
 import AppDSL
-import Lib2 (Product(..))
+import Lib2 (Product(..), Query(..))
 import Control.Monad.Free (Free(..))
 import Network.HTTP.Simple
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy as BL
 
-
--- Reuse the toQueryString logic from previous interpreter or redefine minimally:
 toQueryString :: AppF a -> String
-toQueryString = error "Same as in the HTTP per command interpreter, or re-implement similarly."
+toQueryString (DoAddCommand products _) =
+    "add " ++ unwords (map show products)
+toQueryString (DoBuyCommand qty p _) =
+    let target = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p
+    in "buy " ++ show qty ++ " " ++ target
+toQueryString (DoGiveDiscountCommand p d _) =
+    let target = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p
+    in "giveDiscount " ++ target ++ " " ++ show d ++ "%"
+toQueryString (DoCheckShippingCommand p _) =
+    let target = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p
+    in "checkShipping " ++ target
+toQueryString (DoCompareCommand p1 p2 _) =
+    let t1 = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p1
+        t2 = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p2
+    in "compare " ++ t1 ++ " " ++ t2
+toQueryString (DoTotalCommand p _) =
+    let target = either (("Product(" ++) . (++ ")") . show) (("Index(" ++) . (++ ")") . show) p
+    in "total " ++ target
+toQueryString (DoBlackFriday _) = "blackFriday"
+toQueryString (DoView _) = "view"
 
 runHttpBatch :: App a -> IO a
 runHttpBatch app = do
     (res, cmds) <- collectCommands app []
-    -- cmds now contains all textual commands
-    -- send them all at once
     let batchBody = "BEGIN\n" ++ unlines (map (++ ";") (init cmds)) ++ last cmds ++ "\nEND"
     mResp <- sendBatch batchBody
-    -- The last command's next function receives this response, but we actually don't have a "next"
-    -- after Pure. So if you need a final response, you'd handle it differently. For now, we ignore.
     return res
-
   where
     collectCommands :: App a -> [String] -> IO (a,[String])
     collectCommands (Pure a) acc = return (a, acc)
     collectCommands (Free step) acc = do
       let cmd = toQueryString step
-      -- Instead of calling next with response, we can't finalize intermediate steps here.
-      -- The "smart" approach means we won't know intermediate responses until server runs them.
-      -- So intermediate steps that rely on response must be considered:
-      -- For simplicity, let's say responses are deferred and we treat them as Nothing.
-      -- Another approach is to store placeholders or split your DSL.
-      -- We'll assume responses are not critical per step. Or we can store them and apply after the batch returns.
-      
       case step of
         DoAddCommand _ next -> collectCommands (next Nothing) (acc ++ [cmd])
         DoBuyCommand _ _ next -> collectCommands (next Nothing) (acc ++ [cmd])
