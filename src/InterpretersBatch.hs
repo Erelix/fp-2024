@@ -29,12 +29,14 @@ toQueryString (DoTotalCommand p _) =
     in "total " ++ target
 toQueryString (DoBlackFriday _) = "blackFriday"
 toQueryString (DoView _) = "view"
+toQueryString (DoSave _) = "save"
+toQueryString (DoLoad _) = "load"
 
 runHttpBatch :: App a -> IO a
 runHttpBatch app = do
     (res, cmds) <- collectCommands app []
     let batchBody = "BEGIN\n" ++ unlines (map (++ ";") (init cmds)) ++ last cmds ++ "\nEND"
-    mResp <- sendBatch batchBody
+    _ <- sendBatch batchBody
     return res
   where
     collectCommands :: App a -> [String] -> IO (a,[String])
@@ -50,6 +52,8 @@ runHttpBatch app = do
         DoTotalCommand _ next -> collectCommands (next Nothing) (acc ++ [cmd])
         DoBlackFriday next -> collectCommands (next Nothing) (acc ++ [cmd])
         DoView next -> collectCommands (next Nothing) (acc ++ [cmd])
+        DoSave next -> collectCommands (next Nothing) (acc ++ ["save"])
+        DoLoad next -> collectCommands (next Nothing) (acc ++ ["load"])
 
 sendBatch :: String -> IO (Maybe String)
 sendBatch batch = do

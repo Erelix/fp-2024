@@ -8,23 +8,27 @@ import Lib2 (Product(..))
 main :: IO ()
 main = do
     let program = do
-          resp1 <- addProducts [AddOn "playerBoard" 5.0]
-          return ("Response to addProducts: " ++ show resp1)
-          
-          resp2 <- viewState
-          return ("Response to viewState: " ++ show resp2)
-          
-          resp3 <- buyProduct 2 (Left (AddOn "playerBoard" 5.0))
-          return ("Response to buyProduct: " ++ show resp3)
+          respAdd <- addProducts [AddOn "playerBoard" 5.0]
+          _ <- viewState
 
-          resp4 <- addProducts [BoardGame "venusTMexp" 200.0 []]
-          return ("Response to addProducts (venusTMexp): " ++ show resp4)
+          respBuy <- buyProduct 2 (Left (AddOn "playerBoard" 5.0))
+          _ <- viewState
 
-          resp5 <- viewState
-          return ("Response to viewState: " ++ show resp5)
+          respSave <- saveState
 
-          resp6 <- giveDiscount (Right 2) 20
-          return ("Response to giveDiscount: " ++ show resp6)
+          respAdd2 <- addProducts [BoardGame "venusTMexp" 200.0 []]
+          _ <- viewState
+
+          respLoad <- loadState
+          respViewAfterLoad <- viewState
+
+          return $
+            "Responses: " ++
+            "addProducts: " ++ show respAdd ++ " | " ++
+            "buyProduct: " ++ show respBuy ++ " | " ++
+            "saveState: " ++ show respSave ++ " | " ++
+            "loadState: " ++ show respLoad ++ " | " ++
+            "viewAfterLoad: " ++ show respViewAfterLoad ++ " | "
 
     result <- runHttpPerCommand program
-    putStrLn ("Final result: " ++ show result)
+    putStrLn ("Final result: " ++ result)

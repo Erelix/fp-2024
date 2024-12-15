@@ -1,9 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-
 module Interpreters (runHttpPerCommand) where
 
 import AppDSL
-import Lib2 (Product(..), Query(..))
+import Lib2 (Product(..))
 import Control.Monad.Free (Free(..))
 import Network.HTTP.Simple
 import qualified Data.ByteString.Char8 as BS
@@ -54,6 +53,10 @@ toQueryString (DoBlackFriday _) =
     "blackFriday"
 toQueryString (DoView _) =
     "view"
+toQueryString (DoSave _) =
+    "save"
+toQueryString (DoLoad _) =
+    "load"
 
 sendCommand :: String -> IO (Maybe String)
 sendCommand cmd = do
@@ -77,3 +80,5 @@ runHttpPerCommand (Free step) = do
       DoTotalCommand _ next -> runHttpPerCommand (next mResp)
       DoBlackFriday next -> runHttpPerCommand (next mResp)
       DoView next -> runHttpPerCommand (next mResp)
+      DoSave next -> runHttpPerCommand (next mResp)
+      DoLoad next -> runHttpPerCommand (next mResp)

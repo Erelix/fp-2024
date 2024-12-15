@@ -10,7 +10,8 @@ module Lib3
       renderStatements,
       parseBatch,
       applyStatements,
-      Statements (..)
+      Statements (..),
+      Command(..)
     ) where
 
 import Control.Concurrent.Chan (Chan, readChan, writeChan, newChan)

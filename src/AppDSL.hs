@@ -6,7 +6,6 @@ module AppDSL where
 
 import Control.Monad.Free (Free(..), liftF)
 import Lib2 (Query(..), Product)
-import Data.Maybe (fromMaybe)
 
 data AppF next
     = DoAddCommand [Product] (Maybe String -> next) 
@@ -17,10 +16,11 @@ data AppF next
     | DoTotalCommand (Either Product Int) (Maybe String -> next)
     | DoBlackFriday (Maybe String -> next)
     | DoView (Maybe String -> next)
+    | DoSave (Maybe String -> next)
+    | DoLoad (Maybe String -> next) 
     deriving Functor
 
 type App = Free AppF
-
 
 addProducts :: [Product] -> App (Maybe String)
 addProducts ps = liftF (DoAddCommand ps id)
@@ -45,3 +45,9 @@ blackFriday = liftF (DoBlackFriday id)
 
 viewState :: App (Maybe String)
 viewState = liftF (DoView id)
+
+saveState :: App (Maybe String)
+saveState = liftF (DoSave id)
+
+loadState :: App (Maybe String)
+loadState = liftF (DoLoad id)

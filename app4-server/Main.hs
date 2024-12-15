@@ -5,47 +5,50 @@ import Web.Scotty
 import Data.String.Conversions (cs)
 import Control.Concurrent.STM
 import Control.Monad.IO.Class (liftIO)
-import Lib2 (State, emptyState, stateTransition, parseQuery, Query(..))
-import Lib3 (parseStatements, Statements(..), applyStatements)
+import Control.Concurrent (forkIO)
+import Control.Concurrent.Chan (newChan)
+import qualified Lib2 as L2
+import qualified Lib3 as L3
 import Control.Monad (void)
 
 main :: IO ()
 main = do
-    stateVar <- newTVarIO emptyState
+    stateVar <- newTVarIO L2.emptyState
+    ioChan <- newChan
+    _ <- forkIO (L3.storageOpLoop ioChan)
     scotty 8080 $ do
         post "/command" $ do
             bodyBytes <- body
             let input = cs bodyBytes
             liftIO $ putStrLn ("Received: " ++ show input)
 
-            -- Process command inside STM transaction
-            result <- liftIO $ atomically $ do
+            parseResult <- liftIO $ atomically $ do
                 st <- readTVar stateVar
-                case parseStatements input of
-                    Right (stmts, _) -> 
-                        case applyStatements st stmts of
-                            Right newSt -> do
-                                writeTVar stateVar newSt
-                                return (Right ("Batch processed", newSt))
-                            Left err ->
-                                return (Left err)
-
+                case L3.parseCommand input of
+                    Right (cmd, _) ->
+                        return (Left cmd)
                     Left _ ->
-                        case parseQuery input of
-                            Right (q, _) ->
-                                case stateTransition st q of
-                                    Right (msg, newSt) -> do
+                        case L3.parseStatements input of
+                            Right (stmts, _) ->
+                                case L3.applyStatements st stmts of
+                                    Right newSt -> do
                                         writeTVar stateVar newSt
-                                        return (Right (maybe "(no message)" id msg, newSt))
-                                    Left err -> return (Left err)
-                            Left err -> return (Left err)
+                                        return (Right (Just "Batch processed"))
+                                    Left err -> return (Right (Just err))
+                            Left _ ->
+                                case L2.parseQuery input of
+                                    Right (q, _) ->
+                                        case L2.stateTransition st q of
+                                            Right (msg, newSt) -> do
+                                                writeTVar stateVar newSt
+                                                return (Right msg)
+                                            Left err -> return (Right (Just err))
+                                    Left err -> return (Right (Just err))
 
-            -- Outside the transaction, log and return response
-            case result of
-                Right (msg, newSt) -> do
-                    liftIO $ putStrLn ("SUCCESS: " ++ msg)
-                    liftIO $ putStrLn ("New state: " ++ show newSt)
-                    text (cs msg)
-                Left err -> do
-                    liftIO $ putStrLn ("ERROR: " ++ err)
-                    text (cs ("Error: " ++ err))
+            finalResp <- case parseResult of
+                Left cmd -> liftIO $ do
+                    res <- L3.stateTransition stateVar cmd ioChan
+                    return $ either Just id res
+                Right msg -> return msg
+
+            text $ cs $ maybe "" id finalResp
