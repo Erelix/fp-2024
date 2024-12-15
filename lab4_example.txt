@@ -1,0 +1,141 @@
+-- SIMPLE TESTING --
+
+root@cf984a9fb00d:/workspaces/fp-2024# stack run fp2024-four-server --allow-different-user
+fp2024-0.1.0.0: unregistering (components added: exe:fp2024-four-server)
+fp2024> build (lib + exe) with ghc-9.4.8
+Preprocessing library for fp2024-0.1.0.0..
+Building library for fp2024-0.1.0.0..
+Preprocessing executable 'fp2024-four-server' for fp2024-0.1.0.0..
+Building executable 'fp2024-four-server' for fp2024-0.1.0.0..
+[1 of 2] Compiling Main [Source file changed]
+
+/workspaces/fp-2024/app4-server/Main.hs:12:1: warning: [-Wunused-imports]
+    The import of ‘Control.Monad’ is redundant
+      except perhaps to import instances from ‘Control.Monad’
+    To import instances alone, use: import Control.Monad()
+   |
+12 | import Control.Monad (void)
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[3 of 3] Linking .stack-work/dist/x86_64-linux/ghc-9.4.8/build/fp2024-four-server/fp2024-four-server [Objects changed]
+fp2024> copy/register
+Installing library in /workspaces/fp-2024/.stack-work/install/x86_64-linux/0022a5ac0f2f89917b19cb8f3c781e6af6d20236491c78d30f4c11db7f172ce2/9.4.8/lib/x86_64-linux-ghc-9.4.8/fp2024-0.1.0.0-DZEvRCjlM3lL2PQ7GmYtTO
+Installing executable fp2024-four-server in /workspaces/fp-2024/.stack-work/install/x86_64-linux/0022a5ac0f2f89917b19cb8f3c781e6af6d20236491c78d30f4c11db7f172ce2/9.4.8/bin
+Registering library for fp2024-0.1.0.0..
+Setting phasers to stun... (port 8080) (ctrl-c to quit)
+Received: "add playerBoard 5.0eur"
+Received: "view"
+Received: "buy 2 playerBoard 5.0eur"
+Received: "view"
+Received: "save"
+Received: "add venusTMexp 200.0eur (contains: )"
+Received: "view"
+Received: "load"
+Received: "view"
+Received: "giveDiscount playerBoard 5.0eur 25%"
+Received: "view"
+Received: "checkShipping playerBoard 5.0eur"
+Received: "compare 1 2"
+Received: "total 1"
+Received: "blackFriday"
+Received: "view"
+
+
+root@cf984a9fb00d:/workspaces/fp-2024# stack run fp2024-four-client --allow-different-user
+fp2024> build (lib + exe) with ghc-9.4.8
+Preprocessing library for fp2024-0.1.0.0..
+Building library for fp2024-0.1.0.0..
+Preprocessing executable 'fp2024-four-client' for fp2024-0.1.0.0..
+Building executable 'fp2024-four-client' for fp2024-0.1.0.0..
+[1 of 2] Compiling Main [Source file changed]
+[3 of 3] Linking .stack-work/dist/x86_64-linux/ghc-9.4.8/build/fp2024-four-client/fp2024-four-client [Objects changed]
+fp2024> copy/register
+Installing library in /workspaces/fp-2024/.stack-work/install/x86_64-linux/0022a5ac0f2f89917b19cb8f3c781e6af6d20236491c78d30f4c11db7f172ce2/9.4.8/lib/x86_64-linux-ghc-9.4.8/fp2024-0.1.0.0-DZEvRCjlM3lL2PQ7GmYtTO
+Installing executable fp2024-four-client in /workspaces/fp-2024/.stack-work/install/x86_64-linux/0022a5ac0f2f89917b19cb8f3c781e6af6d20236491c78d30f4c11db7f172ce2/9.4.8/bin
+Registering library for fp2024-0.1.0.0..
+Final result: Responses:
+addProducts: Just "New products added to the state."
+buyProduct: Just "Product bought for 10.0 eur and added to purchase history."
+saveState: Just "State saved successfully."
+addProducts(venusTMexp): Just "New products added to the state."
+loadState: Just "State loaded successfully."
+viewAfterLoad: Just "State: Current State:\nProducts:\n1.  AddOn \"playerBoard\" 5.0\n2.  BoardGame \"venusTMexp\" 200.0 []\n3.  AddOn \"playerBoard\" 5.0\nDiscounts:\nPurchase History:\n  2 units of Left (AddOn \"playerBoard\" 5.0)\n  2 units of Left (AddOn \"playerBoard\" 5.0)\n"
+giveDiscount: Just "Discount applied to AddOn \"playerBoard\" 5.0."
+checkShipping: Just "Shipping cost for this product is 3.99 eur."
+compareProducts: Just "AddOn \"playerBoard\" 5.0 is cheaper than BoardGame \"venusTMexp\" 200.0 [] by 196.25 eur."
+total: Just "Total price of the product: 3.75 eur."
+blackFriday: Just "Black Friday started!!! All products now at half the price!"
+
+
+storage.txt after:
+
+BEGIN
+add playerBoard 5.00eur;
+buy 2 playerBoard 5.00eur
+END
+
+---MORE COMPLEX TESTING---
+
+root@cf984a9fb00d:/workspaces/fp-2024# stack run fp2024-four-server --allow-different-user
+Setting phasers to stun... (port 8080) (ctrl-c to quit)
+Received: "add playerBoard 5.0eur"
+Received: "view"
+Received: "buy 2 playerBoard 5.0eur"
+Received: "view"
+Received: "save"
+Received: "add bigBoxTM 300.0eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.0eur, playerBoard 5.0eur], preludeTMexp 60.0eur (contains: 3 marker, metalResource 20.0eur)"
+Received: "view"
+Received: "giveDiscount bigBoxTM 300.0eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.0eur, playerBoard 5.0eur] 30%"
+Received: "view"
+Received: "checkShipping bigBoxTM 300.0eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.0eur, playerBoard 5.0eur]"
+Received: "compare bigBoxTM 300.0eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.0eur, playerBoard 5.0eur] playerBoard 5.0eur"
+Received: "total bigBoxTM 300.0eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.0eur, playerBoard 5.0eur]"
+Received: "blackFriday"
+Received: "view"
+Received: "buy 1 bigBoxTM 300.0eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.0eur, playerBoard 5.0eur]"
+Received: "view"
+Received: "save"
+Received: "load"
+Received: "view"
+
+
+root@cf984a9fb00d:/workspaces/fp-2024# stack run fp2024-four-client --allow-different-user
+fp2024-0.1.0.0: unregistering (components added: exe:fp2024-four-client)
+fp2024> build (lib + exe) with ghc-9.4.8
+Preprocessing library for fp2024-0.1.0.0..
+Building library for fp2024-0.1.0.0..
+Preprocessing executable 'fp2024-four-client' for fp2024-0.1.0.0..
+Building executable 'fp2024-four-client' for fp2024-0.1.0.0..
+[1 of 2] Compiling Main [Source file changed]
+[3 of 3] Linking .stack-work/dist/x86_64-linux/ghc-9.4.8/build/fp2024-four-client/fp2024-four-client [Objects changed]
+fp2024> copy/register
+Installing library in /workspaces/fp-2024/.stack-work/install/x86_64-linux/0022a5ac0f2f89917b19cb8f3c781e6af6d20236491c78d30f4c11db7f172ce2/9.4.8/lib/x86_64-linux-ghc-9.4.8/fp2024-0.1.0.0-DZEvRCjlM3lL2PQ7GmYtTO
+Installing executable fp2024-four-client in /workspaces/fp-2024/.stack-work/install/x86_64-linux/0022a5ac0f2f89917b19cb8f3c781e6af6d20236491c78d30f4c11db7f172ce2/9.4.8/bin
+Registering library for fp2024-0.1.0.0..
+Final result: Responses:
+addProducts(simple): Just "New products added to the state."
+buyProduct(playerBoard): Just "Product bought for 10.0 eur and added to purchase history."
+saveState #1: Just "State saved successfully."
+addProducts(complex): Just "New products added to the state."
+giveDiscount(complex): Just "Discount applied to BoardGameWithAddOns \"bigBoxTM\" 300.0 [Component 10 \"tile\",Component 2 \"gameBoard\",Component 4 \"card\"] [AddOn \"miniature\" 15.0,AddOn \"playerBoard\" 5.0]."
+checkShipping(complex): Just "Shipping is free for this product."
+compare(complex vs playerBoard): Just "AddOn \"playerBoard\" 5.0 is cheaper than BoardGameWithAddOns \"bigBoxTM\" 300.0 [Component 10 \"tile\",Component 2 \"gameBoard\",Component 4 \"card\"] [AddOn \"miniature\" 15.0,AddOn \"playerBoard\" 5.0] by 225.0 eur."
+total(complex): Just "Total price of the product: 230.0 eur."
+blackFriday: Just "Black Friday started!!! All products now at half the price!"
+buyComplex(half price): Just "Product bought for 167.5 eur and added to purchase history."
+saveState #2: Just "State saved successfully."
+loadState #1: Just "State loaded successfully."
+viewAfterLoad #1: Just "State: Current State:\nProducts:\n1.  AddOn \"playerBoard\" 5.0\n2.  BoardGameWithAddOns \"bigBoxTM\" 300.0 [Component 10 \"tile\",Component 2 \"gameBoard\",Component 4 \"card\"] [AddOn \"miniature\" 15.0,AddOn \"playerBoard\" 5.0]\n3.  BoardGame \"preludeTMexp\" 60.0 [Component 3 \"marker\",AddOn \"metalResource\" 20.0]\n4.  AddOn \"playerBoard\" 5.0\n5.  BoardGameWithAddOns \"bigBoxTM\" 300.0 [Component 10 \"tile\",Component 2 \"gameBoard\",Component 4 \"card\"] [AddOn \"miniature\" 15.0,AddOn \"playerBoard\" 5.0]\n6.  BoardGame \"preludeTMexp\" 60.0 [Component 3 \"marker\",AddOn \"metalResource\" 20.0]\nDiscounts:\n  AddOn \"playerBoard\" 5.0 with 50% discount\n  BoardGameWithAddOns \"bigBoxTM\" 300.0 [Component 10 \"tile\",Component 2 \"gameBoard\",Component 4 \"card\"] [AddOn \"miniature\" 15.0,AddOn \"playerBoard\" 5.0] with 50% discount\n  BoardGame \"preludeTMexp\" 60.0 [Component 3 \"marker\",AddOn \"metalResource\" 20.0] with 50% discount\nPurchase History:\n  2 units of Left (AddOn \"playerBoard\" 5.0)\n  1 units of Left (BoardGameWithAddOns \"bigBoxTM\" 300.0 [Component 10 \"tile\",Component 2 \"gameBoard\",Component 4 \"card\"] [AddOn \"miniature\" 15.0,AddOn \"playerBoard\" 5.0])\n  1 units of Left (BoardGameWithAddOns \"bigBoxTM\" 300.0 [Component 10 \"tile\",Component 2 \"gameBoard\",Component 4 \"card\"] [AddOn \"miniature\" 15.0,AddOn \"playerBoard\" 5.0])\n  2 units of Left (AddOn \"playerBoard\" 5.0)\n"
+
+root@cf984a9fb00d:/workspaces/fp-2024# 
+
+
+storage.txt after:
+
+BEGIN
+add playerBoard 5.00eur, bigBoxTM 300.00eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.00eur, playerBoard 5.00eur], preludeTMexp 60.00eur (contains: 3 marker, metalResource 20.00eur);
+giveDiscount playerBoard 5.00eur 50%;
+giveDiscount bigBoxTM 300.00eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.00eur, playerBoard 5.00eur] 50%;
+giveDiscount preludeTMexp 60.00eur (contains: 3 marker, metalResource 20.00eur) 50%;
+buy 1 bigBoxTM 300.00eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.00eur, playerBoard 5.00eur];
+buy 2 playerBoard 5.00eur
+END

@@ -1,4 +1,8 @@
 BEGIN
-add playerBoard 5.00eur;
+add playerBoard 5.00eur, bigBoxTM 300.00eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.00eur, playerBoard 5.00eur], preludeTMexp 60.00eur (contains: 3 marker, metalResource 20.00eur);
+giveDiscount playerBoard 5.00eur 50%;
+giveDiscount bigBoxTM 300.00eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.00eur, playerBoard 5.00eur] 50%;
+giveDiscount preludeTMexp 60.00eur (contains: 3 marker, metalResource 20.00eur) 50%;
+buy 1 bigBoxTM 300.00eur (contains: 10 tile, 2 gameBoard, 4 card) [includes: miniature 15.00eur, playerBoard 5.00eur];
 buy 2 playerBoard 5.00eur
 END
