@@ -6,14 +6,17 @@
 
 module Main where
 
+import Data.List (isInfixOf)
 import Test.Tasty ( TestTree, defaultMain, testGroup )
-import Test.Tasty.HUnit ( testCase, (@?=), assertFailure )
+import Test.Tasty.HUnit ( testCase, (@?=), assertFailure, assertBool )
 import Test.Tasty.QuickCheck (testProperty)
 import Test.QuickCheck.Monadic (monadicIO, assert, pre)
 import Test.QuickCheck
 import Lib2 qualified
 import Lib3 qualified
 import GHC.Generics (Generic)
+import InterpretersInMemory (runInMemory)
+import AppDSL
 
 
 arbitraryPositiveDouble :: Gen Double
@@ -106,7 +109,7 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [unitTests, propertyTests]
+tests = testGroup "Tests" [unitTests, propertyTests, interpreterInMemoryTests]
 
 propertyTests :: TestTree
 propertyTests = testGroup "Property Tests"
@@ -194,4 +197,64 @@ unitTests = testGroup "Lib2 and Lib3 tests"
           let expected = Right (Lib3.Batch [], "")
           Lib3.parseStatements input @?= expected
       ]
+  ]
+
+interpreterInMemoryTests :: TestTree
+interpreterInMemoryTests = testGroup "InterpretersInMemory Tests"
+  [
+   testCase "Add product and view state" $ do
+      let prod = Lib2.BoardGame "corporateCEOTM" 100.0 [Lib2.Component 2 "tile", Lib2.Component 1 "gameBoard"]
+      (respAdd, respView) <- runInMemory $ do
+        respAdd <- addProducts [prod]
+        respView <- viewState
+        return (respAdd, respView)
+
+      respAdd @?= Just "New products added to the state."
+      case respView of
+        Just s -> assertBool ("View output should contain 'corporateCEOTM'") ("corporateCEOTM" `isInfixOf` s)
+        Nothing -> assertFailure "View did not return anything.",
+
+  testCase "Save and then load state" $ do
+      let prod = Lib2.AddOn "cardSleeve" 5.0
+      (saveMsg, loadMsg, viewMsg) <- runInMemory $ do
+        _ <- addProducts [prod]
+        sMsg <- saveState
+        lMsg <- loadState
+        vMsg <- viewState
+        return (sMsg, lMsg, vMsg)
+
+      saveMsg @?= Just "In-memory state saved."
+      loadMsg @?= Just "In-memory state loaded."
+      case viewMsg of
+        Just s -> assertBool "View output should contain 'cardSleeve'" ("cardSleeve" `isInfixOf` s)
+        Nothing -> assertFailure "View did not return anything.",
+
+  testCase "Buy a product" $ do
+      let prod = Lib2.Component 3 "marker"
+      (buyMsg, viewAfter) <- runInMemory $ do
+        _ <- addProducts [prod]
+        bMsg <- buyProduct 1 (Left prod)
+        vMsg <- viewState
+        return (bMsg, vMsg)
+
+      case buyMsg of
+        Just s -> assertBool "Buy message should mention 'bought' or 'purchase history'." 
+                   ("bought" `isInfixOf` s || "purchase history" `isInfixOf` s)
+        Nothing -> assertFailure "No message returned after buying."
+      case viewAfter of
+        Just s -> assertBool "View should reflect the product 'marker' after purchase." 
+                   ("marker" `isInfixOf` s)
+        Nothing -> assertFailure "View did not return anything.",
+
+  testCase "Apply Black Friday discount" $ do
+      let prod = Lib2.BoardGame "baseTM" 200.0 []
+      (bfMsg, totalBefore, totalAfter) <- runInMemory $ do
+        _ <- addProducts [prod]
+        before <- getTotal (Left prod)
+        bf <- blackFriday
+        after <- getTotal (Left prod)
+        return (bf, before, after)
+      bfMsg @?= Just "Black Friday started!!! All products now at half the price!"
+      totalBefore @?= Just "Total price of the product: 200.0 eur."
+      totalAfter @?= Just "Total price of the product: 100.0 eur."
   ]
